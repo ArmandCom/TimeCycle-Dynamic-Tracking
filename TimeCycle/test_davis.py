@@ -37,7 +37,7 @@ from torch.autograd import Variable
 
 
 params = {}
-params['filelist'] = '/nfs.yoda/xiaolonw/davis/DAVIS/vallist.txt'
+params['filelist'] = '/data/Armand/TimeCycle/davis/DAVIS/vallist.txt'
 # params['batchSize'] = 24
 params['imgSize'] = 320
 params['cropSize'] = 320

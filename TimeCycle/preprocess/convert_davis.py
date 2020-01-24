@@ -50,8 +50,9 @@ for i in range(len(jpglist)):
     gtfolder = annotations_folder + fname + '/'
     outfolder = out_folder + fname + '/'
 
-    if not os.path.exists(outfolder):
-        os.mkdir(outfolder, 0755 )
+    # TODO: correct error
+    # if not os.path.exists(outfolder):
+    #     os.mkdir(outfolder, 0755 )
 
     files = os.listdir(gtfolder)
 

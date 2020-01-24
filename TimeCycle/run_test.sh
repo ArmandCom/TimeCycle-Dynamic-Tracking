@@ -2,7 +2,7 @@
 
 for name in checkpoint_14.pth.tar
 do
-YOUR_DATASET_FOLDER=''
+YOUR_DATASET_FOLDER='/data/Armand/TimeCycle'
 
 echo $name
 if [ ! -d "results/davis_results__$name/" ]; then
