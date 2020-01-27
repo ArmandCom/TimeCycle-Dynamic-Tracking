@@ -24,6 +24,7 @@ class Logger(object):
     '''Save training process to log file with simple plot function.'''
     def __init__(self, fpath, title=None, resume=False): 
         self.file = None
+        print(resume)
         self.resume = resume
         self.title = '' if title == None else title
         if fpath is not None:

@@ -6,12 +6,11 @@ import cv2
 from PIL import Image
 
 jpglist = []
-
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('-o', '--out_folder', default='/scratch/xiaolonw/davis_results/', type=str)
-parser.add_argument('-i', '--in_folder', default='/scratch/xiaolonw/davis_results_mask_sep/', type=str)
-parser.add_argument('-d', '--dataset', default='/scratch/xiaolonw/davis/', type=str)
+parser.add_argument('-o', '--out_folder', default='/data/Armand/TimeCycle/davis_results/', type=str)
+parser.add_argument('-i', '--in_folder', default='/data/Armand/TimeCycle/davis_results_mask_sep/', type=str)
+parser.add_argument('-d', '--dataset', default='/data/Armand/TimeCycle/davis/', type=str)
 
 args = parser.parse_args()
 
@@ -51,8 +50,8 @@ for i in range(len(jpglist)):
     outfolder = out_folder + fname + '/'
 
     # TODO: correct error
-    # if not os.path.exists(outfolder):
-    #     os.mkdir(outfolder, 0755 )
+    if not os.path.exists(outfolder):
+        os.mkdir(outfolder, 0o0755 )
 
     files = os.listdir(gtfolder)
 

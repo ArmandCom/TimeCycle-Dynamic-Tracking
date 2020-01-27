@@ -35,7 +35,7 @@ from scipy.ndimage.morphology import binary_dilation,generate_binary_structure
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-
+print('test')
 params = {}
 params['filelist'] = '/data/Armand/TimeCycle/davis/DAVIS/vallist.txt'
 # params['batchSize'] = 24
@@ -79,9 +79,9 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 # Checkpoints
-parser.add_argument('-c', '--checkpoint', default='/scratch/xiaolonw/pytorch_checkpoints/unsup3dnl_single_contrast', type=str, metavar='PATH',
+parser.add_argument('-c', '--checkpoint', default='/data/Armand/TimeCycle/ckpt/unsup3dnl_single_contrast', type=str, metavar='PATH',
                     help='path to save checkpoint (default: checkpoint)')
-parser.add_argument('--resume', default='', type=str, metavar='PATH',
+parser.add_argument('--resume', default='../', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 
 

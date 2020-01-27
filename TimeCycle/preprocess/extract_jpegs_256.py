@@ -55,7 +55,7 @@ def download_clip_wrapper(row):
 
     if os.path.isdir(outname) is False:
         try:
-            os.makedirs( outname, 0755 )
+            os.makedirs( outname, 0o0755 )
         except:
             print(outname)
 
