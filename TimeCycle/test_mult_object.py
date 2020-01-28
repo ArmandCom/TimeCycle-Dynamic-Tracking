@@ -43,7 +43,7 @@ params['filelist'] = '/data/Armand/TimeCycle/davis/DAVIS/val_multiple_list.txt'
 params['imgSize'] = 320
 params['cropSize'] = 320
 params['cropSize2'] = 80
-params['videoLen'] = 10
+# params['videoLen'] = 10
 params['offset'] = 0
 params['sideEdge'] = 80
 params['predFrames'] = 1
@@ -61,6 +61,9 @@ def str_to_bool(v):
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
+
+parser.add_argument('--videoLen', default=8, type=int,
+                    help='predict how many frames away')
 
 # Datasets
 parser.add_argument('-d', '--data', default='path to dataset', type=str)
@@ -111,10 +114,10 @@ parser.add_argument('--pretrained_imagenet', type=str_to_bool, nargs='?', const=
 parser.add_argument('--topk_vis', default=20, type=int,
                     help='topk_vis')
 
-parser.add_argument('--videoLen', default=7, type=int,
-                    help='predict how many frames away')
 parser.add_argument('--frame_gap', default=2, type=int,
                     help='predict how many frames away')
+parser.add_argument('--initialTime', default=, type=int,
+                    help='starting point of input frames')
 
 parser.add_argument('--cropSize', default=320, type=int,
                     help='predict how many frames away')
@@ -186,42 +189,45 @@ def main():
     if not os.path.isdir(args.checkpoint):
         mkdir_p(args.checkpoint)
 
-    val_loader = torch.utils.data.DataLoader(
-        balls.DavisSet(params, is_train=False),
-        batch_size=int(params['batchSize']), shuffle=False,
-        num_workers=args.workers, pin_memory=True)
+    # Note: keep increasing number of input frames:
+    for i in range(1,10):
+        params['initialTime'] = i
+        val_loader = torch.utils.data.DataLoader(
+            balls.DavisSet(params, is_train=False),
+            batch_size=int(params['batchSize']), shuffle=False,
+            num_workers=args.workers, pin_memory=True)
 
 
-    model = video3d.CycleTime(class_num=params['classNum'], trans_param_num=3, pretrained=args.pretrained_imagenet, temporal_out=args.temporal_out)
-    model = torch.nn.DataParallel(model).cuda()
+        model = video3d.CycleTime(class_num=params['classNum'], trans_param_num=3, pretrained=args.pretrained_imagenet, temporal_out=args.temporal_out)
+        model = torch.nn.DataParallel(model).cuda()
 
-    cudnn.benchmark = False
-    print('    Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
-
-
-    title = 'videonet'
-    if args.resume:
-        # Load checkpoint.
-        print('==> Resuming from checkpoint..')
-        assert os.path.isfile(args.resume), 'Error: no checkpoint directory found!'
-        args.checkpoint = os.path.dirname(args.resume)
-        checkpoint = torch.load(args.resume)
-        start_epoch = checkpoint['epoch']
-        partial_load(checkpoint['state_dict'], model)
-
-        logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
-        logger.set_names(['Learning Rate', 'Train Loss', 'Contrast Loss'])
-
-        del checkpoint
-
-    else:
-        logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
-        logger.set_names(['Learning Rate', 'Train Loss', 'Contrast Loss'])
+        cudnn.benchmark = False
+        print('    Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
 
 
-    if args.evaluate:
-        print('\nEvaluation only')
-        test_loss = test(val_loader, model, 1, use_cuda)
+        title = 'videonet'
+        if args.resume:
+            # Load checkpoint.
+            print('==> Resuming from checkpoint..')
+            assert os.path.isfile(args.resume), 'Error: no checkpoint directory found!'
+            args.checkpoint = os.path.dirname(args.resume)
+            checkpoint = torch.load(args.resume)
+            start_epoch = checkpoint['epoch']
+            partial_load(checkpoint['state_dict'], model)
+
+            logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
+            logger.set_names(['Learning Rate', 'Train Loss', 'Contrast Loss'])
+
+            del checkpoint
+
+        else:
+            logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
+            logger.set_names(['Learning Rate', 'Train Loss', 'Contrast Loss'])
+
+
+        if args.evaluate:
+            print('\nEvaluation only')
+            test_loss = test(val_loader, model, 1, use_cuda)
 
 
 
@@ -253,6 +259,8 @@ def test(val_loader, model, epoch, use_cuda):
 
         finput_num_ori = params['videoLen']
         finput_num     = finput_num_ori
+        initial_time = params['initialTime']
+        print('Number of frames input: ', initial_time)
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -308,7 +316,6 @@ def test(val_loader, model, epoch, use_cuda):
                         if flag == 0:
                             lbl_set.append(pixellbl)
                             count_lbls.append(0)
-
             lbls_new.append(nowlbl)
 
         lbl_set_temp = []
@@ -353,6 +360,7 @@ def test(val_loader, model, epoch, use_cuda):
         imgs_toprint = []
 
         # ref image
+        # Note: Resize each frame to double h and w and save
         for t in range(imgs_set.shape[0]):
             img_now = imgs_set[t]
 
@@ -369,13 +377,14 @@ def test(val_loader, model, epoch, use_cuda):
             imname  = save_path + str(batch_idx) + '_' + str(t) + '_frame.jpg'
             scipy.misc.imsave(imname, img_now)
 
+        #Note: guarda les labels desde 0 a VideoLen-1 ? --> si videoLen = 1 hauria de guardar només l'inicial
         for t in range(finput_num_ori):
 
             nowlbl = lbls_new[t]
             imname  = save_path + str(batch_idx) + '_' + str(t) + '_label.jpg'
             scipy.misc.imsave(imname, nowlbl)
 
-
+        #Note: why?
         now_batch_size = 1
 
         imgs_stack = []
@@ -394,8 +403,10 @@ def test(val_loader, model, epoch, use_cuda):
 
 
         t03 = time.time()
-
-        for iter in range(finput_num_ori):
+        # Note: finput_num_ori is the number of inputs we will take for prediction (one of them is 0)
+        # Note: im_num is n_frames - n_frames_input
+        # Note: for iter in range(0, im_num, now_batch_size):
+        for iter in range(finput_num_ori-1,finput_num_ori): #Note: initial time
 
             print(iter)
 
@@ -403,17 +414,20 @@ def test(val_loader, model, epoch, use_cuda):
             startid = iter
             endid   = iter + now_batch_size
 
-            if endid > im_num:
-                endid = im_num
+            # if endid > im_num:
+            #     endid = im_num
 
             now_batch_size2 = endid - startid
 
             for i in range(now_batch_size2):
 
-                imgs = imgs_total[:, iter + i + 1: iter + i + finput_num_ori, :, :, :]
-                # imgs = imgs_total[:, iter + i + 1: iter + i + 2, :, :, :]
-                imgs2 = imgs_total[:, 0, :, :, :].unsqueeze(1)
-                imgs = torch.cat((imgs2, imgs), dim=1)
+                if finput_num_ori > 1:
+                    # imgs = imgs_total[:, iter + i + 1: iter + i + finput_num_ori, :, :, :]
+                    imgs = imgs_total[:, iter + i + 1: iter + i + 1, :, :, :]
+                    # imgs2 = imgs_total[:, 0, :, :, :].unsqueeze(1)
+                    # imgs = torch.cat((imgs2, imgs), dim=1)
+                else:
+                    imgs = imgs_total[:, 0, :, :, :].unsqueeze(1)
 
                 imgs_tensor[i] = imgs
                 target_tensor[i, 0] = imgs_total[0, iter + i + finput_num_ori]
@@ -428,7 +442,13 @@ def test(val_loader, model, epoch, use_cuda):
         print(t04-t03, 'model forward', t03-t02, 'image prep')
 
         # for iter in range(total_frame_num - finput_num_ori):
-        for iter in range(finput_num_ori):
+        # Note: only in the first iteration we are taking only one reference (0), if not, 2.
+        # if finput_num_ori > 1:
+        #     more_frames = 1
+        # else:
+        #     more_frames = 0
+
+        for iter in range(1):
 
             if iter % 10 == 0:
                 print(iter)
@@ -473,7 +493,7 @@ def test(val_loader, model, epoch, use_cuda):
             predlbls = np.zeros((height_dim, width_dim, len(lbl_set)))
             # predlbls2 = np.zeros((height_dim * width_dim, len(lbl_set)))
 
-            for t in range(finput_num):
+            for t in range(finput_num-1,finput_num):
 
                 tt1 = time.time()
 
@@ -487,6 +507,7 @@ def test(val_loader, model, epoch, use_cuda):
                 else:
                     lbl = lbls_resize2[t + iter, hh, ww, :]
 
+                # check_corrfeat = corrfeat2[t, ww, hh, h, w]
                 np.add.at(predlbls, (h, w), lbl * corrfeat2[t, ww, hh, h, w][:, None])
 
             t07 = time.time()
@@ -498,7 +519,6 @@ def test(val_loader, model, epoch, use_cuda):
                 nowt = t
                 predlbls[:, :, nowt] = predlbls[:, :, nowt] - predlbls[:, :, nowt].min()
                 predlbls[:, :, nowt] = predlbls[:, :, nowt] / predlbls[:, :, nowt].max()
-
 
             lbls_resize2[iter + finput_num_ori] = predlbls
 

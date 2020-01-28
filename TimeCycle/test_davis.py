@@ -407,7 +407,6 @@ def test(val_loader, model, epoch, use_cuda):
             now_batch_size2 = endid - startid
 
             for i in range(now_batch_size2):
-
                 imgs = imgs_total[:, iter + i + 1: iter + i + finput_num_ori, :, :, :]
                 imgs2 = imgs_total[:, 0, :, :, :].unsqueeze(1)
                 imgs = torch.cat((imgs2, imgs), dim=1)
@@ -424,6 +423,7 @@ def test(val_loader, model, epoch, use_cuda):
         t04 = time.time()
         print(t04-t03, 'model forward', t03-t02, 'image prep')
 
+        #Note: different from previous iter: this one takes each one of the previously computed correlations
         for iter in range(total_frame_num - finput_num_ori):
 
             if iter % 10 == 0:
@@ -469,6 +469,7 @@ def test(val_loader, model, epoch, use_cuda):
             predlbls = np.zeros((height_dim, width_dim, len(lbl_set)))
             # predlbls2 = np.zeros((height_dim * width_dim, len(lbl_set)))
 
+            #Note: iterates through every time step of each prediction.
             for t in range(finput_num):
 
                 tt1 = time.time()
