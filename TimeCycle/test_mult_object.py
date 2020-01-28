@@ -111,7 +111,7 @@ parser.add_argument('--pretrained_imagenet', type=str_to_bool, nargs='?', const=
 parser.add_argument('--topk_vis', default=20, type=int,
                     help='topk_vis')
 
-parser.add_argument('--videoLen', default=2, type=int,
+parser.add_argument('--videoLen', default=7, type=int,
                     help='predict how many frames away')
 parser.add_argument('--frame_gap', default=2, type=int,
                     help='predict how many frames away')
@@ -395,10 +395,11 @@ def test(val_loader, model, epoch, use_cuda):
 
         t03 = time.time()
 
-        for iter in range(0, im_num, now_batch_size):
+        for iter in range(finput_num_ori):
 
             print(iter)
 
+            #TODO: entendre aixo
             startid = iter
             endid   = iter + now_batch_size
 
@@ -410,6 +411,7 @@ def test(val_loader, model, epoch, use_cuda):
             for i in range(now_batch_size2):
 
                 imgs = imgs_total[:, iter + i + 1: iter + i + finput_num_ori, :, :, :]
+                # imgs = imgs_total[:, iter + i + 1: iter + i + 2, :, :, :]
                 imgs2 = imgs_total[:, 0, :, :, :].unsqueeze(1)
                 imgs = torch.cat((imgs2, imgs), dim=1)
 
@@ -425,7 +427,8 @@ def test(val_loader, model, epoch, use_cuda):
         t04 = time.time()
         print(t04-t03, 'model forward', t03-t02, 'image prep')
 
-        for iter in range(total_frame_num - finput_num_ori):
+        # for iter in range(total_frame_num - finput_num_ori):
+        for iter in range(finput_num_ori):
 
             if iter % 10 == 0:
                 print(iter)
@@ -517,8 +520,7 @@ def test(val_loader, model, epoch, use_cuda):
 
             scipy.misc.imsave(imname, np.uint8(img_with_heatmap))
             scipy.misc.imsave(imname2, np.uint8(predlbls_val))
-
-
+            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ str(iter + finput_num_ori + 39) + '_mask.png', np.uint8(predlbls_val))
 
     fileout.close()
 
