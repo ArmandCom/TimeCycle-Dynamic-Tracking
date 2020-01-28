@@ -358,7 +358,7 @@ def test(val_loader, model, epoch, use_cuda):
         std=[0.229, 0.224, 0.225]
 
         imgs_toprint = []
-
+        #ponc
         # ref image
         # Note: Resize each frame to double h and w and save
         for t in range(imgs_set.shape[0]):
