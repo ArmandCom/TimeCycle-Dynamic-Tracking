@@ -1,6 +1,6 @@
-#TimeCycle Dynamic Tracking
+# TimeCycle Dynamic Tracking
 
-##TODO:
+## TODO:
 
  0. Acabar d'entendre test (A/M/P) 
  1. Test mask amb les dues taronges (P)
