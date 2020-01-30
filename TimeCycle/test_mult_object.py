@@ -28,7 +28,7 @@ import models.videos.model_test as video3d
 
 from utils import Logger, AverageMeter, mkdir_p, savefig
 # import models.dataset.davis_test as davis
-import models.dataset.balls_test as balls
+import models.dataset.smot_test as loader
 
 from geotnf.transformation import GeometricTnf
 
@@ -195,9 +195,10 @@ def main():
     for i in range(1, 10):
         if i > 4: #Note: once it gets to length L, it takes a rolling window of that size
             params['initialTime'] += 1
-        params['videoLen'] = i
+        else:
+            params['videoLen'] = i
         val_loader = torch.utils.data.DataLoader(
-            balls.DavisSet(params, is_train=False),
+            loader.DavisSet(params, is_train=False),
             batch_size=int(params['batchSize']), shuffle=False,
             num_workers=args.workers, pin_memory=True)
 
@@ -510,6 +511,7 @@ def test(val_loader, model, epoch, use_cuda):
 
                 np.add.at(predlbls, (h, w), lbl * corrfeat2[t, ww, hh, h, w][:, None])
 
+
             t07 = time.time()
             # print(t07-t06, 'lbl proc', t06-t05, 'argsorts')
             predlbls = predlbls / finput_num
@@ -541,12 +543,20 @@ def test(val_loader, model, epoch, use_cuda):
 
             imname  = save_path + str(batch_idx) + '_' + str(iter + finput_num_ori + initial_time) + '_label.jpg'
             imname2  = save_path + str(batch_idx) + '_' + str(iter + finput_num_ori + initial_time) + '_mask.png'
+            imname_att  = save_path + 'att_' + str(batch_idx) + '_' + str(iter + finput_num_ori + initial_time) + '.png'
 
             scipy.misc.imsave(imname, np.uint8(img_with_heatmap))
             scipy.misc.imsave(imname2, np.uint8(predlbls_val))
+
+
+            att_toprint = np.repeat(np.uint8(corrfeat2[0]*255).reshape(1600,1600)[:,:,np.newaxis], 3, axis=2)
+            att_toprint = np.repeat(np.uint8(predlbls_cp[:,:,1]*255)[:,:,np.newaxis], 3, axis=2)
+            att_toprint =  np.float32(img_now) * 0.5 + cv2.resize(np.float32(att_toprint),(640,640)) * 0.5
+            scipy.misc.imsave(imname_att, att_toprint)
+
             print(predlbls_val.shape)
-            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ str(iter + finput_num_ori + initial_time + 39) + '_mask.png', np.uint8(predlbls_val))
-            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ 'HM' + str(iter + finput_num_ori + initial_time + 39) + '.png', np.uint8(img_with_heatmap))
+            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ str(iter + finput_num_ori + initial_time + 1) + '_mask.png', np.uint8(predlbls_val))
+            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ 'HM' + str(iter + finput_num_ori + initial_time + 1) + '.png', np.uint8(img_with_heatmap))
 
     fileout.close()
 
