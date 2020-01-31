@@ -436,8 +436,30 @@ def test(val_loader, model, epoch, use_cuda):
             target_tensor[0, 0] = imgs_total[0, iter + finput_num_ori + initial_time]
 
             corrfeat2_now = model(imgs_tensor, target_tensor)
-            corrfeat2_now = corrfeat2_now.view(now_batch_size, finput_num_ori, corrfeat2_now.size(1), corrfeat2_now.size(2), corrfeat2_now.size(3))
+
+
+            corrfeat2_now = corrfeat2_now.view(now_batch_size, finput_num_ori, corrfeat2_now.size(1), corrfeat2_now.size(1))
+
+            # Note: unfold - spatial correlation
+            unfold = nn.Unfold(kernel_size=5, padding=2)
+            ii = torch.arange(height_dim * width_dim)
+            ii_shaped = ii.view(1, 1, height_dim, width_dim)/1.
+            jj = ii
+            ii_patches = unfold(ii_shaped)[0].type(torch.LongTensor).permute(1, 0).contiguous()
+            jj_patches = ii_patches
+
+            for t in range(finput_num_ori):
+                for i in range(corrfeat2_now.shape[0]):
+                    values = corrfeat2_now[0, t, ii_patches.view(-1), jj_patches.view(-1)]
+                    value = torch.mean(values.view(height_dim * width_dim, -1), dim=1)
+                    corrfeat2_now[0, t, ii, jj] = value
+
+                    jj_patches = torch.cat([jj_patches[1:, :], jj_patches[0:1, :]], dim=0)
+                    jj = torch.cat([jj[1:], jj[0:1]], dim=0)
+
             # Note: initially we iterated over the batch_size. but we have set it to 1
+            corrfeat2_now = corrfeat2_now.view(now_batch_size, finput_num_ori, corrfeat2_now.size(2), height_dim, width_dim)
+
             corrfeat2_set.append(corrfeat2_now[0].data.cpu().numpy())
 
         t04 = time.time()
@@ -473,6 +495,7 @@ def test(val_loader, model, epoch, use_cuda):
 
 
             topk_vis = args.topk_vis
+            topk_vis = 1 #TODO: undo hardcoding
             vis_ids_h = np.zeros((corrfeat2.shape[0], height_dim, width_dim, topk_vis)).astype(np.int)
             vis_ids_w = np.zeros((corrfeat2.shape[0], height_dim, width_dim, topk_vis)).astype(np.int)
 
@@ -553,6 +576,13 @@ def test(val_loader, model, epoch, use_cuda):
             att_toprint = np.repeat(np.uint8(predlbls_cp[:,:,1]*255)[:,:,np.newaxis], 3, axis=2)
             att_toprint =  np.float32(img_now) * 0.5 + cv2.resize(np.float32(att_toprint),(640,640)) * 0.5
             scipy.misc.imsave(imname_att, att_toprint)
+
+            # if initial_time == 0:
+            #     imname_att = save_path + 'att_init_' + str(batch_idx) + '_' + str(initial_time) + '.png'
+            #     att_toprint_init = np.uint8((lbls[0,0]/lbls.max()) * 255)
+            #     att_toprint_init = np.float32(img_now) * 0.5 + cv2.resize(np.float32(att_toprint_init), (640, 640)) * 0.5
+            #     scipy.misc.imsave(imname_att, att_toprint_init)
+
 
             print(predlbls_val.shape)
             scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ str(iter + finput_num_ori + initial_time + 1) + '_mask.png', np.uint8(predlbls_val))
