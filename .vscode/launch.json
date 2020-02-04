@@ -10,8 +10,8 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
-            "args":["demo.py","--resume","./experiments/siammask_sharp/SiamMask_DAVIS.pth","--config","./experiments/siammask_sharp/config_davis.json"]
+            "console": "1:bash",
+            "args":["../../demo.py","--resume","SiamMask_DAVIS.pth","--config","config_davis.json"]
         }
     ]
 }

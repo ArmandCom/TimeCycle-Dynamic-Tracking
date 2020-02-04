@@ -32,13 +32,13 @@ if __name__ == '__main__':
         siammask = load_pretrain(siammask, args.resume)
 
     siammask.eval().to(device)
-    print("Es posa be a la gpu")
+    
     # Parse Image file
-    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))
-    print(img_files)
+    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[:30]
+    
     ims = [cv2.imread(imf) for imf in img_files]
-    print("img.shape ", ims[0].shape)
-    print(siammask)
+    
+    
     # Select ROI
     # cv2.namedWindow("SiamMask", cv2.WND_PROP_FULLSCREEN)
     # cv2.setWindowProperty("SiamMask", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         # init_rect = cv2.selectROI('SiamMask', ims[0], False, False)
         init_rect = (737,165, 76, 76) # balls noia
         init_rect = (75,388, 200, 79) # Seagull
-        init_rect = (536,105, 41, 40)
+        # init_rect = (536,105, 41, 40) # juggling-easy
 
         # init_rect = (50,50,50,50)
         x, y, w, h = init_rect
@@ -64,14 +64,22 @@ if __name__ == '__main__':
             target_sz = np.array([w, h])
             state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)  # init tracker
         elif f > 0:  # tracking
-            state = siamese_track(state, im, mask_enable=True, refine_enable=True, device=device)  # track
+            print("Ara decideix on esta el target en la imatge ", f)
+            state, bboxes = siamese_track(state, im, mask_enable=True, refine_enable=True, device=device)  # track
+            
             location = state['ploygon'].flatten()
+            print("location ",location)
             mask = state['mask'] > state['p'].seg_thr
-            print("creat")
             im[:, :, 2] = (mask > 0) * 255 + (mask == 0) * im[:, :, 2]
             cv2.polylines(im, [np.int0(location).reshape((-1, 1, 2))], True, (0, 255, 0), 3)
             # cv2.imshow('SiamMask', im)
-            cv2.imwrite('/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask/results/'+str(f)+'.jpeg', im)
+            cv2.putText(im,str(state['score']),(50,50),cv2.FONT_HERSHEY_COMPLEX,1.0,(0,255,0))
+            for i in range(0,50):
+                x,y,w,h,sco = bboxes[:,i]
+                cv2.rectangle(im, (int(y),int(x)), (int(y+h),int(x+w)),(0,0,200),1)
+                cv2.putText(im,str(sco),(int(y),int(x)),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0))
+            print(bboxes[:,:4])
+            cv2.imwrite('/data/Ponc/tracking/results/seagulls/'+str(f)+'.jpeg', im)
             # key = cv2.waitKey(1)
             # if key > 0:
             #     break
@@ -79,4 +87,5 @@ if __name__ == '__main__':
         toc += cv2.getTickCount() - tic
     toc /= cv2.getTickFrequency()
     fps = f / toc
+    
     print('SiamMask Time: {:02.1f}s Speed: {:3.1f}fps (with visulization!)'.format(toc, fps))

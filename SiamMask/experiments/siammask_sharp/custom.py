@@ -180,9 +180,14 @@ class Custom(SiamMask):
 
     def track_mask(self, search):
         self.feature, self.search = self.features.forward_all(search)
+        # print("self.zf = ", self.zf.size()) # 1,256,7,7
+        # print("self.feature = ", self.feature[0].size()) # self.feature is used to upsample the mask # 64, 125, 125
+        # print("self.search = ", self.search[0].size()) # 256, 31,31
         rpn_pred_cls, rpn_pred_loc = self.rpn(self.zf, self.search)
-        self.corr_feature = self.mask_model.mask.forward_corr(self.zf, self.search)
+        self.corr_feature = self.mask_model.mask.forward_corr(self.zf, self.search) # 256, 25, 25
+        # print("self.corr_feature = ", self.corr_feature[0].size())
         pred_mask = self.mask_model.mask.head(self.corr_feature)
+
         return rpn_pred_cls, rpn_pred_loc, pred_mask
 
     def track_refine(self, pos):
