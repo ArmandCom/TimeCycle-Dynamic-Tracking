@@ -71,7 +71,7 @@ def get_subwindow_tracking(im, pos, model_sz, original_sz, avg_chans, out_mode='
     # print("pos ", pos)
     # print("model_sz ", model_sz)
     # print("original_sz ", original_sz)
-    cv2.imwrite('/data/Ponc/tracking/results/windows_seagulls/im'+str(arrendatario)+'.jpeg', im)
+    # cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/im'+str(arrendatario)+'.jpeg', im)
     if isinstance(pos, float):
         pos = [pos, pos]
     sz = original_sz
@@ -113,7 +113,7 @@ def get_subwindow_tracking(im, pos, model_sz, original_sz, avg_chans, out_mode='
     else:
         im_patch = im_patch_original
     #cv2.imshow('crop', im_patch)
-    cv2.imwrite('/data/Ponc/tracking/results/windows_seagulls/im_patch_'+str(arrendatario)+'.jpeg', im_patch)
+    # cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/im_patch_'+str(arrendatario)+'.jpeg', im_patch)
     #cv2.waitKey(0)
     arrendatario+=1
     return im_to_torch(im_patch) if out_mode in 'torch' else im_patch
@@ -122,6 +122,7 @@ def get_subwindow_tracking(im, pos, model_sz, original_sz, avg_chans, out_mode='
 def generate_anchor(cfg, score_size):
     anchors = Anchors(cfg)
     anchor = anchors.anchors
+    
     x1, y1, x2, y2 = anchor[:, 0], anchor[:, 1], anchor[:, 2], anchor[:, 3]
     anchor = np.stack([(x1+x2)*0.5, (y1+y2)*0.5, x2-x1, y2-y1], 1)
 
@@ -153,6 +154,7 @@ def siamese_init(im, target_pos, target_sz, model, hp=None, device='cpu'):
     p.scales = model.anchors['scales']
     p.ratios = model.anchors['ratios']
     p.anchor_num = model.anchor_num
+    
     p.anchor = generate_anchor(model.anchors, p.score_size)
     avg_chans = np.mean(im, axis=(0, 1))
 
@@ -184,21 +186,18 @@ def siamese_init(im, target_pos, target_sz, model, hp=None, device='cpu'):
 
 def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu', debug=False):
     global arrendatario
-    # print("------siamese track-------")
     p = state['p']
     net = state['net']
     avg_chans = state['avg_chans']
     window = state['window']
-    # print("window ", window)
     target_pos = state['target_pos']
     target_sz = state['target_sz']
-    # print("target_sz ", target_sz)
-    # print("p.context_amount ", p.context_amount)
+    
     wc_x = target_sz[1] + p.context_amount * sum(target_sz)
     hc_x = target_sz[0] + p.context_amount * sum(target_sz)
     s_x = np.sqrt(wc_x * hc_x)
-    scale_x = p.exemplar_size / s_x
-    d_search = (p.instance_size - p.exemplar_size) / 2
+    scale_x = p.exemplar_size / s_x  # p.exemplar_size = 127, sempre es la mateixa
+    d_search = (p.instance_size - p.exemplar_size) / 2 
     pad = d_search / scale_x
     s_x = s_x + 2 * pad
     crop_box = [target_pos[0] - round(s_x) / 2, target_pos[1] - round(s_x) / 2, round(s_x), round(s_x)]
@@ -208,7 +207,7 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
         crop_box_int = np.int0(crop_box)
         cv2.rectangle(im_debug, (crop_box_int[0], crop_box_int[1]),
                       (crop_box_int[0] + crop_box_int[2], crop_box_int[1] + crop_box_int[3]), (255, 0, 0), 2)
-        cv2.imwrite('/data/Ponc/tracking/results/windows_seagulls/'+'search_'+str(arrendatario)+'.jpeg', im_debug)
+        # cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', im_debug)
         cv2.waitKey(0)
 
     # extract scaled crops for search region x at previous target position
@@ -221,15 +220,11 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     
     
     delta = delta.permute(1, 2, 3, 0).contiguous().view(4, -1).data.cpu().numpy()
-    auxi = F.softmax(score.permute(1, 2, 3, 0).contiguous().view(2, -1).permute(1, 0), dim=1)
-    # print(auxi.shape)
-    print(auxi[0:10,:])
 
     # Softmax in 3125,2,which each column is BG, FG
     score = F.softmax(score.permute(1, 2, 3, 0).contiguous().view(2, -1).permute(1, 0), dim=1).data[:,
             1].cpu().numpy() 
-    
-   
+
     delta[0, :] = delta[0, :] * p.anchor[:, 2] + p.anchor[:, 0]
     delta[1, :] = delta[1, :] * p.anchor[:, 3] + p.anchor[:, 1]
     delta[2, :] = np.exp(delta[2, :]) * p.anchor[:, 2]
@@ -258,19 +253,16 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     pscore = penalty * score
 
     # cos window (motion model)
-    # Now let us do a array of the 10 best bboxes
-    bboxes = np.zeros((5,50), dtype=np.float64)
+    
+    bboxes = np.zeros((5,10), dtype=np.float64)
     pscore = pscore * (1 - p.window_influence) + window * p.window_influence
-    for bbox_count in range(0,50):
+    for bbox_count in range(0,10):
         if(bbox_count==0):
             best_pscore_id = np.argmax(pscore)
         
         best_pscore_id_tmp = np.argmax(pscore)
-        print("best score id = ", best_pscore_id_tmp)
-        print("Best softmax: ", pscore[best_pscore_id_tmp])
-
         pred_in_crop = delta[:, best_pscore_id_tmp] / scale_x
-        # print(pred_in_crop)
+        
         lr = penalty[best_pscore_id_tmp] * score[best_pscore_id_tmp] * p.lr  # lr for OTB
 
         res_x = pred_in_crop[0] + target_pos[0]
@@ -278,19 +270,23 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
 
         res_w = target_sz[0] * (1 - lr) + pred_in_crop[2] * lr
         res_h = target_sz[1] * (1 - lr) + pred_in_crop[3] * lr
-        # print(res_x, res_y, res_w, res_h)
         
         target_pos = np.array([res_x, res_y])
         target_sz = np.array([res_w, res_h])
         bboxes[0, bbox_count] = target_pos[0]
         bboxes[1, bbox_count] = target_pos[1]
-        bboxes[2:4, bbox_count] = target_sz 
+        bboxes[2, bbox_count] = target_sz[0]
+        bboxes[3, bbox_count] = target_sz[1]
+        # bboxes[2:4, bbox_count] = target_sz 
         bboxes[4, bbox_count] = score[best_pscore_id_tmp]
         pscore[best_pscore_id_tmp] = 0.0
+
+        
 
     target_pos = np.array([bboxes[0,0],bboxes[1,0]])
     target_sz = np.array([bboxes[2,0], bboxes[3,0]])
     # for Mask Branch
+    mask_enable=False #TODO: change back to True
     if mask_enable:
         best_pscore_id_mask = np.unravel_index(best_pscore_id, (5, p.score_size, p.score_size))
         delta_x, delta_y = best_pscore_id_mask[2], best_pscore_id_mask[1] # delta_x and delta_y are the churro selected in the volume
@@ -313,7 +309,7 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
                                   borderMode=cv2.BORDER_CONSTANT,
                                   borderValue=padding)
             return crop
-
+        # 
         s = crop_box[2] / p.instance_size
         sub_box = [crop_box[0] + (delta_x - p.base_size / 2) * p.total_stride * s,
                    crop_box[1] + (delta_y - p.base_size / 2) * p.total_stride * s,
