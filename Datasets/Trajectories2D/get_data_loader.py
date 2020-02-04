@@ -6,9 +6,10 @@ import scipy.io as sio
 import numpy as np
 import scipy.misc
 
-import data.video_transforms as vtransforms
-from .moving_mnist import MovingMNIST
+from traj_tree import TrajectoryTree
 import argparse
+import matplotlib.pyplot as plt
+
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -22,24 +23,20 @@ parser.add_argument('--n_workers', type=int, default=8, help='number of threads'
 parser.add_argument('--gpus', type=str, default='0', help='visible GPU ids, separated by comma')
 
 # data
-parser.add_argument('--dset_dir', type=str, default=os.path.join('/data/Armand/', 'datasets/'))
-parser.add_argument('--dset_name', type=str, default='moving-mnist')
+parser.add_argument('--dset_dir', type=str, default=os.path.join('/data/Armand/', 'TimeCycle/'))
+parser.add_argument('--dset_name', type=str, default='traj')
 
 # Moving MNIST
-parser.add_argument('--num_objects', type=int, nargs='+', default=[1],
-                         help='Max number of digits in Moving MNIST videos.') # default 2
-parser.add_argument('--n_frames_input', type=int, default=9)
-parser.add_argument('--n_frames_output', type=int, default=0)
+parser.add_argument('--traj_length', type=int, default=9)
 
 opt = parser.parse_args()
 
 opt.dset_path = os.path.join(opt.dset_dir, opt.dset_name)
 
 def get_data_loader(opt):
-  transform = transforms.Compose([vtransforms.ToTensor()])
-  dset = MovingMNIST(opt.dset_path, opt.is_train, opt.n_frames_input,
-                     opt.n_frames_output, opt.num_objects, transform)
-
+  traj_trees = TrajectoryTree(opt.traj_length, opt.is_train, dset_path=opt.dset_path, generate=False)
+  traj_data = traj_trees.load_data(opt.is_train)
+  dset = data.TensorDataset(*traj_data)
   dloader = data.DataLoader(dset, batch_size=opt.batch_size, shuffle=opt.is_train,
                             num_workers=opt.n_workers, pin_memory=True)
   return dloader
@@ -48,4 +45,8 @@ if __name__ == '__main__':
     dloader = get_data_loader(opt)
     for step, data in enumerate(dloader):
         # data = data.reshape()
-        scipy.misc.imsave('moving-mnist-example.jpg', data)
+        if step < 1:
+            for i in range(len(data[1][0,:])):
+                print(data[1][0,i])
+                fig = plt.plot(data[0][0,i,0].numpy())
+                plt.savefig('example_traj_loaded')

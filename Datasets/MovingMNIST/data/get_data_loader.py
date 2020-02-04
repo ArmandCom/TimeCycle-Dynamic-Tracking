@@ -6,8 +6,8 @@ import scipy.io as sio
 import numpy as np
 import scipy.misc
 
-import data.video_transforms as vtransforms
-from .moving_mnist import MovingMNIST
+import video_transforms as vtransforms
+from moving_mnist import MovingMNIST
 import argparse
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
