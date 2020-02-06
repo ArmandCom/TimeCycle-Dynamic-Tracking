@@ -24,7 +24,7 @@ parser.add_argument('--gpus', type=str, default='0', help='visible GPU ids, sepa
 
 # data
 parser.add_argument('--dset_dir', type=str, default=os.path.join('/data/Armand/', 'TimeCycle/'))
-parser.add_argument('--dset_name', type=str, default='traj')
+parser.add_argument('--dset_name', type=str, default='traj_multi')
 
 # Moving MNIST
 parser.add_argument('--traj_length', type=int, default=9)
@@ -34,19 +34,35 @@ opt = parser.parse_args()
 opt.dset_path = os.path.join(opt.dset_dir, opt.dset_name)
 
 def get_data_loader(opt):
-  traj_trees = TrajectoryTree(opt.traj_length, opt.is_train, dset_path=opt.dset_path, generate=False)
-  traj_data = traj_trees.load_data(opt.is_train)
-  dset = data.TensorDataset(*traj_data)
-  dloader = data.DataLoader(dset, batch_size=opt.batch_size, shuffle=opt.is_train,
+    if opt.dset_name == 'traj':
+        traj_trees = TrajectoryTree(opt.traj_length, opt.is_train, dset_path=opt.dset_path, generate=False)
+        traj_data = traj_trees.load_data(opt.is_train)
+
+    elif opt.dset_name == 'traj_multi':
+        traj_trees = TrajectoryTree(opt.traj_length, opt.is_train, dset_path=opt.dset_path, generate=False)
+        traj_data = traj_trees.load_data(opt.is_train)
+    else:
+        raise NotImplementedError
+
+    dset = data.TensorDataset(*traj_data)
+    dloader = data.DataLoader(dset, batch_size=opt.batch_size, shuffle=opt.is_train,
                             num_workers=opt.n_workers, pin_memory=True)
-  return dloader
+    return dloader
 
 if __name__ == '__main__':
     dloader = get_data_loader(opt)
     for step, data in enumerate(dloader):
-        # data = data.reshape()
+
+        # Traj tree
+        # if step < 1:
+        #     for i in range(len(data[1][0,:])):
+        #         print('Fork id: ',data[1][0,i])
+        #         fig = plt.plot(data[0][0,i,0].numpy())
+        #         plt.savefig('example_traj_loaded')
+
+        # Traj multiple
         if step < 1:
-            for i in range(len(data[1][0,:])):
-                print(data[1][0,i])
-                fig = plt.plot(data[0][0,i,0].numpy())
+            for i in range(data.shape[1]):
+                fig = plt.plot(data[0,i,:].numpy())
                 plt.savefig('example_traj_loaded')
+            plt.close()
