@@ -3,9 +3,7 @@ import torch.nn as nn
 import torch.functional as F
 
 class TemporalEncoder(nn.Module):
-    '''
-    Encodes images. Similar structure as DCGAN.
-    '''
+
     def __init__(self, is_train, input_size, output_size=2048, kernel_width=3, n_layers=3):
         super(TemporalEncoder, self).__init__()
 
@@ -114,7 +112,6 @@ class TemporalEncoder(nn.Module):
 #         activation_fn=None,
 #         scope='AZ_FC_block2_conv1' + name,
 #         reuse=None,
-#     ) #TODO: does the channel stay in the last position of the tensor?
 #     # norm
 #     if use_groupnorm:
 #         # group-norm

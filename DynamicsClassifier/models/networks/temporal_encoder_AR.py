@@ -41,7 +41,9 @@ class MaskedFullyConnection(BaseModule, nn.Linear):
         super(MaskedFullyConnection, self).__init__(*args, **kwargs)
 
         assert mask_type in ['A', 'B']
-        self.register_buffer('mask', self.weight.data.clone())
+        # Adds a persistent buffer to the module.
+        # This is typically used to register a buffer that should not to be considered a model parameter.
+        self.register_buffer('mask', self.weight.data.clone()) # Saves weights in buffer
 
         # Build mask
         self.mask.fill_(0)
@@ -82,6 +84,7 @@ class MaskedFullyConnection(BaseModule, nn.Linear):
         """
         String representation.
         """
+        #TODO: maybe it can be avoided
         return self.__class__.__name__ + '(' \
                + 'mask_type=' + str(self.mask_type) \
                + ', in_features=' + str(self.in_features // self.in_channels) \

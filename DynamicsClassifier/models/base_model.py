@@ -21,6 +21,7 @@ def init_weights(m):
       m.weight.data.normal_(1.0, 0.02)
       m.bias.data.fill_(0)
   except:
+    #TODO: initialize special layers
     print('Exception in init_weights:', class_name)
 
 class BaseModel:

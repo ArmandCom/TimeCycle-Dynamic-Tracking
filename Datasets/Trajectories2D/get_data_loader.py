@@ -7,6 +7,7 @@ import numpy as np
 import scipy.misc
 
 from traj_tree import TrajectoryTree
+from traj_multiple import TrajectoryMultiple
 import argparse
 import matplotlib.pyplot as plt
 
@@ -34,12 +35,13 @@ opt = parser.parse_args()
 opt.dset_path = os.path.join(opt.dset_dir, opt.dset_name)
 
 def get_data_loader(opt):
+    generate = True
     if opt.dset_name == 'traj':
-        traj_trees = TrajectoryTree(opt.traj_length, opt.is_train, dset_path=opt.dset_path, generate=False)
+        traj_trees = TrajectoryTree(opt.traj_length, dset_path=opt.dset_path, generate=generate)
         traj_data = traj_trees.load_data(opt.is_train)
 
     elif opt.dset_name == 'traj_multi':
-        traj_trees = TrajectoryTree(opt.traj_length, opt.is_train, dset_path=opt.dset_path, generate=False)
+        traj_trees = TrajectoryMultiple(opt.traj_length, dset_path=opt.dset_path, generate=generate)
         traj_data = traj_trees.load_data(opt.is_train)
     else:
         raise NotImplementedError
