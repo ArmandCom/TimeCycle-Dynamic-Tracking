@@ -22,7 +22,7 @@ from typing import List
 
 '''-------------------------'''
 
-class MaskedFullyConnection(BaseModule, nn.Linear):
+class MaskedFullyConnection(nn.Linear):
     """
     Implements a Masked Fully Connection layer (MFC, Eq. 6).
     This is the autoregressive layer employed for the estimation of
@@ -79,22 +79,7 @@ class MaskedFullyConnection(BaseModule, nn.Linear):
 
         return o
 
-    def __repr__(self):
-        # type: () -> str
-        """
-        String representation.
-        """
-        #TODO: maybe it can be avoided
-        return self.__class__.__name__ + '(' \
-               + 'mask_type=' + str(self.mask_type) \
-               + ', in_features=' + str(self.in_features // self.in_channels) \
-               + ', out_features=' + str(self.out_features // self.out_channels)\
-               + ', in_channels=' + str(self.in_channels) \
-               + ', out_channels=' + str(self.out_channels) \
-               + ', n_params=' + str(self.n_parameters) + ')'
-
-
-class Estimator1D(BaseModule):
+class Estimator1D(nn.Module):
     """
     Implements an estimator for 1-dimensional vectors.
     1-dimensional vectors arise from the encoding of images.
@@ -161,45 +146,45 @@ class Estimator1D(BaseModule):
 
 '''-------------------------'''
 
-from functools import reduce
-from operator import mul
-
-class BaseModule(nn.Module):
-    """
-    Implements the basic module.
-    All other modules inherit from this one
-    """
-    def load_w(self, checkpoint_path):
-        # type: (str) -> None
-        """
-        Loads a checkpoint into the state_dict.
-        :param checkpoint_path: the checkpoint file to be loaded.
-        """
-        self.load_state_dict(torch.load(checkpoint_path))
-
-    def __repr__(self):
-        # type: () -> str
-        """
-        String representation
-        """
-        good_old = super(BaseModule, self).__repr__()
-        addition = 'Total number of parameters: {:,}'.format(self.n_parameters)
-
-        return good_old + '\n' + addition
-
-    def __call__(self, *args, **kwargs):
-        return super(BaseModule, self).__call__(*args, **kwargs)
-
-    @property
-    def n_parameters(self):
-        # type: () -> int
-        """
-        Number of parameters of the model.
-        """
-        n_parameters = 0
-        for p in self.parameters():
-            if hasattr(p, 'mask'):
-                n_parameters += torch.sum(p.mask).item()
-            else:
-                n_parameters += reduce(mul, p.shape)
-        return int(n_parameters)
+# from functools import reduce
+# from operator import mul
+#
+# class BaseModule(nn.Module):
+#     """
+#     Implements the basic module.
+#     All other modules inherit from this one
+#     """
+#     def load_w(self, checkpoint_path):
+#         # type: (str) -> None
+#         """
+#         Loads a checkpoint into the state_dict.
+#         :param checkpoint_path: the checkpoint file to be loaded.
+#         """
+#         self.load_state_dict(torch.load(checkpoint_path))
+#
+#     def __repr__(self):
+#         # type: () -> str
+#         """
+#         String representation
+#         """
+#         good_old = super(BaseModule, self).__repr__()
+#         addition = 'Total number of parameters: {:,}'.format(self.n_parameters)
+#
+#         return good_old + '\n' + addition
+#
+#     def __call__(self, *args, **kwargs):
+#         return super(BaseModule, self).__call__(*args, **kwargs)
+#
+#     @property
+#     def n_parameters(self):
+#         # type: () -> int
+#         """
+#         Number of parameters of the model.
+#         """
+#         n_parameters = 0
+#         for p in self.parameters():
+#             if hasattr(p, 'mask'):
+#                 n_parameters += torch.sum(p.mask).item()
+#             else:
+#                 n_parameters += reduce(mul, p.shape)
+#         return int(n_parameters)

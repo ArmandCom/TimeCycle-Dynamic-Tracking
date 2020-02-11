@@ -23,10 +23,11 @@ class BaseArgs:
     self.parser.add_argument('--model', type=str, default='crop', help='Model name')
 
     # dimensions
-    self.parser.add_argument('--k', type=int, nargs='+', default=[64, 64])
-    self.parser.add_argument('--image_size', type=int, nargs='+', default=[64, 64])
-    self.parser.add_argument('--feat_latent_size', type=int, default=3,
+    self.parser.add_argument('--k', type=int, nargs='+', default=6)
+    self.parser.add_argument('--feat_latent_size', type=int, default=64,
                              help='Size of convolutional features')
+    self.parser.add_argument('--image_size', type=int, nargs='+', default=[64, 64])
+
     self.parser.add_argument('--time_enc_size', type=int, default=4,
                              help='Size of temporal encoding')
     self.parser.add_argument('--manifold_size', type=int, default=3,

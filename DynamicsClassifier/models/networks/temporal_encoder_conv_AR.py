@@ -14,13 +14,14 @@ class MaskedConv2d(nn.Conv2d): #BaseModule,
         super(MaskedConv2d, self).__init__(*args, **kwargs)
         assert mask_type in ['A', 'B']
         self.register_buffer('mask', self.weight.data.clone())
-        _, _, kt, kd = self.weightd.size()
+        _, _, kt, kd = self.weight.size()
         assert kt == 3
         self.mask.fill_(0)
         self.mask[:, :, :kt // 2, :] = 1
         if idx + (mask_type == 'B') > 0:
             self.mask[:, :, kt // 2, :idx + (mask_type == 'B')] = 1
 
+        # print('Mask\n', self.mask.shape, '\n', self.mask[1,0])
         self.weight.mask = self.mask
 
     def forward(self, x):
@@ -135,6 +136,8 @@ class Estimator2D(nn.Module): #BaseModule
         )
         self.layers = nn.Sequential(*layers_list)
 
+        # print('layers: ', self.layers)
+
     def forward(self, x):
         # type: (torch.Tensor) -> torch.Tensor
         """
@@ -143,8 +146,16 @@ class Estimator2D(nn.Module): #BaseModule
         :param x: the batch of latent vectors.
         :return: the batch of CPD estimates.
         """
-        h = torch.unsqueeze(x, dim=1)  # add singleton channel dim
-        h = self.layers(h)
-        o = h
+
+        #TODO: create layout with only x coordinates activated --> check differentiability
+        x_rsh = torch.unsqueeze(x.view(-1, x.shape[2], x.shape[3]), dim=1)  # add singleton channel dim
+        h = self.layers(x_rsh)
+
+        idx = [i for i in range(x.size(-1) - 1, -1, -1)]
+        idx = torch.LongTensor(idx).cuda()
+        x_rsh_inv = x_rsh.index_select(-1, idx)
+        h_inv = self.layers(x_rsh_inv)
+
+        o = torch.cat([h, h_inv], dim=1)
 
         return o

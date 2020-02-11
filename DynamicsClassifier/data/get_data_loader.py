@@ -6,10 +6,10 @@ import scipy.io as sio
 import numpy as np
 import scipy.misc
 
-# from data.traj_tree import TrajectoryTree
-# from data.traj_multiple import TrajectoryMultiple
-from traj_tree import TrajectoryTree
-from traj_multiple import TrajectoryMultiple
+from data.traj_tree import TrajectoryTree
+from data.traj_multiple import TrajectoryMultiple
+# from traj_tree import TrajectoryTree
+# from traj_multiple import TrajectoryMultiple
 
 import argparse
 import matplotlib.pyplot as plt
@@ -30,7 +30,7 @@ def args():
     # data
     parser.add_argument('--dset_dir', type=str, default=os.path.join('/data/Armand/', 'TimeCycle/'))
     parser.add_argument('--dset_name', type=str, default='traj_multi')
-    parser.add_argument('--generate_dset', type=str, default=True)
+    parser.add_argument('--generate_dset', type=str, default=False)
 
     parser.add_argument('--traj_length', type=int, default=9)
 
@@ -49,7 +49,7 @@ def get_data_loader(opt):
 
     elif opt.dset_name == 'traj_multi':
         traj_trees = TrajectoryMultiple(opt.traj_length, dset_path=opt.dset_path, generate=opt.generate_dset)
-        traj_data = traj_trees.load_data(opt.is_train)
+        traj_data = [traj_trees.load_data(opt.is_train)]
         # TODO: save with another file ext? unable to open shared memory object </torch_30896_57790118> in read-write mode. Might be a permission issue
     else:
         raise NotImplementedError
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
         # Traj multiple
         if step < 1:
-            for i in range(data.shape[1]):
-                fig = plt.plot(data[0,i,:].numpy())
+            for i in range(data[0].shape[2]):
+                fig = plt.plot(data[0][0,0,i,:].numpy())
                 plt.savefig('example_traj_loaded')
             plt.close()
