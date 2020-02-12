@@ -2,6 +2,8 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import scipy.misc as sm
 # import factorization
 
 # Note: Factorize and construct matrix K
@@ -129,28 +131,80 @@ def get_dist(M, neigh):
 #     """
 #     torch.max()
 
+def format_input(X, chan, shape, save_test = False):
+    '''
+    :param X: [N, channels(x,y,S), k points, Traj Length]
+    :param chan: which channel use as coordinate
+    :param shape: Height or width of the output tensor
+    :return: Reshaped tensor: [N, shape, Traj Length]
+    '''
+    assert chan == 0 or chan == 1
+
+    axis_values = X[:, chan]
+    scores = X[:, -1]
+
+    # Make sure trajectories fit in the image without losing their dynamics
+    min_per_traj = axis_values.min(2)[0].unsqueeze(2).repeat(1,1,X.shape[-1])
+    under0_idx = (min_per_traj < 0)
+    if len(axis_values[under0_idx]) > 0:
+        print('Warning: Negative coordinates found')
+        axis_values[under0_idx] -= min_per_traj[under0_idx] # + random.random(0, shape/2)
+    max_per_traj = axis_values.max(2)[0].unsqueeze(2).repeat(1, 1, X.shape[-1])
+    overtop_idx = (max_per_traj >= shape)
+    while len(axis_values[overtop_idx]) > 0:
+        print('Warning: /2 size reduction for fitting')
+        axis_values[overtop_idx] /= 2
+        max_per_traj = axis_values.max(2)[0].unsqueeze(2).repeat(1, 1, X.shape[-1])
+        overtop_idx = (max_per_traj >= shape)
+
+    assert axis_values.min() >= 0 and axis_values.max() < shape
+
+    # Extract indexes
+    idx = torch.round(axis_values).long()
+
+    # Create layout
+    X_reshaped = torch.zeros(X.shape[0], shape, X.shape[-1])
+
+    # Place scores in layout
+    X_reshaped.scatter_(1, idx, scores)
+
+    if save_test:
+        for tr in range(axis_values.shape[1]):
+            plt.plot(axis_values[0, tr])
+            plt.savefig('test_plot_traj')
+        sm.imsave('test_img_traj.png', X_reshaped[0].numpy())
+
+    return X_reshaped
+
 
 def main():
 
-    n_frames_input = 6
-    n = n_frames_input // 2 + n_frames_input % 2
-    neigh = torch.randint(6,(1,6,2))
+    # n_frames_input = 6
+    # n = n_frames_input // 2 + n_frames_input % 2
+    # neigh = torch.randint(6,(1,6,2))
+    #
+    # '''Test get_G, get_K'''
+    # M = torch.Tensor([np.linspace(11, 5, 7), np.linspace(4, 10, 7)]).unsqueeze(0).permute(0,2,1).float()
+    # Gs = get_partial_G(M, 2).squeeze()
+    # # K = get_K(M).squeeze()
+    # # trK = torch.trace(K)
+    # # trK2 = get_trace_K(M, 'k')
+    # # trG = torch.trace(Gs)
+    # # trG2 = get_trace_K(M, 'g')
+    # # dist = get_dist(M, neigh)
+    #
+    # print(M.shape)
+    # print(Gs.shape)
 
-    '''Test get_G, get_K'''
-    M = torch.Tensor([np.linspace(11, 5, 7), np.linspace(4, 10, 7)]).unsqueeze(0).permute(0,2,1).float()
-    Gs = get_partial_G(M, 2).squeeze()
-    # K = get_K(M).squeeze()
-    # trK = torch.trace(K)
-    # trK2 = get_trace_K(M, 'k')
-    # trG = torch.trace(Gs)
-    # trG2 = get_trace_K(M, 'g')
-    # dist = get_dist(M, neigh)
+    traj_length = 9
+    k_points = 2
+    input = torch.randint(-1, 6, (2,2,k_points,traj_length)).float()
+    scores = torch.ones((2,1,k_points,traj_length)).float()
+    input = torch.cat([input, scores], dim=1)
+    shape = 8 # 4
+    chan = 0
 
-    print(M.shape)
-    print(Gs.shape)
-
-    # print(G.size(), M.size(), '\n',M,'\n', G,'\n',K)
-    # test
+    X = format_input(input, chan, shape, show=True)
 
 if __name__ == "__main__":
     print("hello")
