@@ -1,1 +1,4 @@
-#TODO: scipy.misc change version to run
+'''Tomorrow'''
+#TODO: Change logdet for trace
+#TODO: New approach with coordinates
+#TODO: Shorter trajectories (smallest SV will be higher)

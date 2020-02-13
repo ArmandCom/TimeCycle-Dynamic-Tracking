@@ -5,6 +5,7 @@ import os
 import data
 import models
 import utils
+from utils.utils import *
 import sys
 from test import evaluate
 
@@ -40,6 +41,10 @@ for epoch in range(opt.start_epoch, opt.n_epochs):
 
   for step, data in enumerate(train_loader):
     # TODO: do actual testing - modify testing code
+
+    # if FORMAT_INPUT=TRUE
+    # provisional_height = 80
+    # data = [format_input(data[0], 0, provisional_height)]
 
     loss_dict = model.train(*data, step)
 

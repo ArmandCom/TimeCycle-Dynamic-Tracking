@@ -7,20 +7,17 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 from .base_model import BaseModel
-# from models.networks.temporal_encoder_conv_AR import Estimator2D
-from models.networks.temporal_encoder_block_AR import TemporalEncoder
+from models.networks.temporal_encoder_conv_AR import Estimator2D
 from models.networks.selection import SelectionByAttention
 
 from utils.hankel import gram_matrix
 from utils import *
-from utils.soft_argmax import SoftArgmax1D
 
 from torch.distributions import *
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
 
 # TODO: trick! Switch from run to debug and vice versa --> hold Shift.
 
@@ -29,7 +26,7 @@ class DynClass(BaseModel):
   def __init__(self, opt):
     super(DynClass, self).__init__()
 
-    self.delta = 1e-3
+    self.delta = 1e-2
 
     self.is_train = opt.is_train
     self.image_size = opt.image_size[-1]
@@ -65,28 +62,22 @@ class DynClass(BaseModel):
     '''
     self.nets = {}
 
-    # Time encoding network 1
-    # time_encoder_model = Estimator2D(
-    #   code_length=self.T,
-    #   fm_list=[4, 8, 16, 32],
-    #   cpd_channels=self.feat_latent_size
-    # )
-
-    # Time encoding network 2
-    time_encoder_model = TemporalEncoder(self.K, self.T, self.feat_latent_size)
+    # Time encoding network
+    time_encoder_model = Estimator2D(
+      code_length=self.T,
+      fm_list=[4, 8, 16, 32],
+      cpd_channels=self.feat_latent_size
+    )
     self.time_encoder_model = nn.DataParallel(time_encoder_model.cuda())
     self.nets['time_encoder_model'] = self.time_encoder_model
 
     # Selection network
-    selection_model = SelectionByAttention(in_channels= self.feat_latent_size,
+    selection_model = SelectionByAttention(in_channels= 2*self.feat_latent_size,
                                            indep_channels = self.T * self.K)
-    # Note in_channels is 2*self_latent_size when we use the other AR Time Encoder.
     self.selection_model = nn.DataParallel(selection_model.cuda())
     self.nets['selection_model'] = self.selection_model
 
-    # self.softmax = nn.Softmax(dim=1)
-    # softargmax = SoftArgmax1D()
-    # self.softargmax = nn.DataParallel(softargmax.cuda())
+    self.softmax = nn.Softmax(dim=1)
 
   def setup_training(self):
     '''
@@ -121,11 +112,6 @@ class DynClass(BaseModel):
 
   def train(self, input, step):
 
-    # Shuffle data in the K dimension
-    # for tr in range(self.T):
-    #   k_idx_perm = torch.randperm(self.K)
-    #   input[..., tr] = input[..., k_idx_perm, tr]
-
     input = Variable(input.cuda(), requires_grad=True)
     batch_size, n_chan, n_dim, traj_length = input.size()
 
@@ -150,61 +136,33 @@ class DynClass(BaseModel):
     # val, idx = heat_map.max(1)
     # selected = torch.gather(encoder_input, dim=2, index=idx.view(batch_size, 2, 1, traj_length))
 
-    #Note: option 2: attention + distributions + entropy + softargmax
-    # # heat_map = torch.sigmoid(heat_map)
-    # heat_map_softmax = torch.softmax(heat_map, dim=1)
-    # entropy = 0
-    # distr = []
-    # indices = []
-    # # samples = []
-    # distr.append(Categorical(heat_map_softmax))
-    # #TODO: this categorical is not right (computed over T)
-    # for t in range(self.T):
-    #   entropy += distr[t].entropy().mean()
-    #   indices.append(self.softargmax(heat_map[...,t]))
-    #   # samples.append(distr[t].sample().view(batch_size, 2, 1))
-    # # idx = torch.stack(samples, dim=-1)
-    # indices = torch.stack(indices, dim=-1)
-    # idx = torch.round(indices).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=idx.unsqueeze(1))
-
-    # Note: option 3: attention + distributions + entropy + softindices
-    # heat_map = torch.sigmoid(heat_map)
-    heat_map = torch.softmax(heat_map, dim=1) #TODO: Review option
-    heat_map = heat_map / heat_map.max(1)[0].unsqueeze(1)
+    #Note: option 2: attention + distributions + entropy
+    heat_map = torch.sigmoid(heat_map)
+    # heat_map = torch.softmax(heat_map, dim=1)
     entropy = 0
     distr = []
-    soft_coord = []
+    samples = []
     for t in range(self.T):
-      distr.append(Categorical(heat_map[..., t]))
+      distr.append(Categorical(heat_map[...,t]))
       entropy += distr[t].entropy().mean()
-      soft_coord.append(torch.bmm(heat_map     [..., t].unsqueeze(-2),
-                                  encoder_input[..., t].reshape(-1, n_dim, 1)).squeeze())
-    soft_coord = torch.stack(soft_coord, dim=-1).unsqueeze(1)
-    # selected = torch.round(soft_coord).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=indices.unsqueeze(1))
+      samples.append(distr[t].sample().view(batch_size, 2, 1)) #rsample not implemented for categorical
 
-    # For representation:
-    val, idx = heat_map.max(1)
-    selected = torch.gather(encoder_input, dim=2, index=idx.view(batch_size, 2, 1, traj_length))
+    idx = torch.stack(samples, dim=-1)
+    heat_map.register_hook(print)
+    selected = torch.gather(encoder_input, dim=2, index=idx)
 
-    # Note: option 4: directly output coordinate, minimize soft-euclidean distance with nearest neighbor.
+    # selected = None
+    # if step%100 == 1:
+    #   quick_represent(encoder_input[0, 0], selected.view(batch_size, 2, -1)[0,0])
 
     '''Losses'''
-    #TODO: Try Trace of G
-    loss_dynamics = self.loss_dynamics(soft_coord)
+    #TODO: Normalize G?
+    loss_dynamics = self.loss_dynamics(selected)
     loss_dict['Logdet_G'] = loss_dynamics.item()
-
-    loss_entropy = entropy
-    loss_dict['Entropy'] = loss_entropy.item()
-
-    if step%100 == 1:
-      # quick_represent(encoder_input[0, 0], soft_coord.view(batch_size, 2, -1)[0,0], name='example_result_soft')
-      # quick_represent(encoder_input[0, 0], selected[0, 0, 0], name='example_result_hard')
-      print('\n-loss_entropy: ', loss_entropy, '\nloss_dynamics: ', loss_dynamics)
+    # print(loss_dynamics.item())
 
     '''Optimizer step'''
-    loss = loss_dynamics + 0.1 * loss_entropy
+    loss = loss_dynamics
     loss_dict['Total_loss'] = loss.item()
     loss.backward()
     self.optimizer.step()
@@ -238,54 +196,29 @@ class DynClass(BaseModel):
     # heat_map = torch.softmax(heat_map, dim=1)
     # heat_map = torch.sigmoid(heat_map)
     # val, idx = heat_map.max(1)
-    # selected = torch.gather(heat_map, dm=1, index=idx.unsqueeze(1))
+    # selected = torch.gather(heat_map, dim=1, index=idx.unsqueeze(1))
 
-    #Note: option 2: attention + distributions + entropy + softargmax
-    # # heat_map = torch.sigmoid(heat_map)
-    # heat_map_softmax = torch.softmax(heat_map, dim=1)
-    # entropy = 0
-    # distr = []
-    # indices = []
-    # # samples = []
-    # distr.append(Categorical(heat_map_softmax))
-    # #TODO: this categorical is not right (computed over T)
-    # for t in range(self.T):
-    #   entropy += distr[t].entropy().mean()
-    #   indices.append(self.softargmax(heat_map[...,t]))
-    #   # samples.append(distr[t].sample().view(batch_size, 2, 1))
-    # # idx = torch.stack(samples, dim=-1)
-    # indices = torch.stack(indices, dim=-1)
-    # idx = torch.round(indices).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=idx.unsqueeze(1))
-
-    # Note: option 3: attention + distributions + entropy + softindices
-    # heat_map = torch.sigmoid(heat_map)
-    heat_map = torch.softmax(heat_map, dim=1)
-    heat_map = heat_map / heat_map.max(1)[0].unsqueeze(1)
+    #Note: option 2: attention + distributions + entropy
+    heat_map = torch.sigmoid(heat_map)
+    # heat_map = torch.softmax(heat_map, dim=1)
     entropy = 0
     distr = []
-    soft_coord = []
+    samples = []
     for t in range(self.T):
-      distr.append(Categorical(heat_map[..., t]))
+      distr.append(Categorical(heat_map[...,t]))
       entropy += distr[t].entropy().mean()
-      soft_coord.append(torch.bmm(heat_map[..., t].unsqueeze(-2),
-                                  encoder_input[..., t].reshape(-1, n_dim, 1)).squeeze())
-    soft_coord = torch.stack(soft_coord, dim=-1).unsqueeze(1)
-    # selected = torch.round(soft_coord).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=indices.unsqueeze(1))
+      samples.append(distr[t].sample().view(batch_size, 2, 1)) #rsample not implemented for categorical
 
-    # Note: option 4: directly output coordinate, minimize soft-euclidean distance with nearest neighbor.
-
+    idx = torch.stack(samples, dim=-1)
+    heat_map.register_hook(print)
+    selected = torch.gather(encoder_input, dim=2, index=idx)
 
     '''Losses'''
-    loss_dynamics = self.loss_dynamics(soft_coord)
+    loss_dynamics = self.loss_dynamics(selected)
     res_dict['Logdet_G'] = loss_dynamics.item()
 
-    loss_entropy = entropy
-    res_dict['Entropy'] = loss_entropy.item()
-
     '''Optimizer step'''
-    loss = loss_dynamics + 0.1*loss_entropy
+    loss = loss_dynamics
     res_dict['Total_loss'] = loss.item()
 
     '''Other Losses'''
@@ -300,11 +233,11 @@ class DynClass(BaseModel):
 
     return lr_dict
 
-def quick_represent(all, selected, name):
-  for i in range(all.shape[0]):
+def quick_represent(self, all, selected):
+  for i in range(self.K ):
     plt.plot(all[i].detach().cpu().numpy())
   plt.plot(selected.detach().cpu().numpy(), 'go--')
-  plt.savefig('results/' + name)
+  plt.savefig('results/example_result')
   plt.close()
 
 

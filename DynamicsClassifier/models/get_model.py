@@ -1,4 +1,6 @@
+# Note: Currently using Spatio-Temporal approach
 from .DynClass import DynClass
+# from .DynClass_spa-temp import DynClass
 
 def get_model(opt):
 

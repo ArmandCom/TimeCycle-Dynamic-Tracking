@@ -12,7 +12,7 @@ class BaseArgs:
 
     # hardware
     self.parser.add_argument('--n_workers', type=int, default=8, help='number of threads')
-    self.parser.add_argument('--gpus', type=str, default='0', help='visible GPU ids, separated by comma')
+    self.parser.add_argument('--gpus', type=str, default='1', help='visible GPU ids, separated by comma')
 
     # data
     self.parser.add_argument('--dset_dir', type=str, default=os.path.join('/data/Armand/', 'TimeCycle/'))
@@ -24,7 +24,7 @@ class BaseArgs:
 
     # dimensions
     self.parser.add_argument('--k', type=int, nargs='+', default=6)
-    self.parser.add_argument('--feat_latent_size', type=int, default=64,
+    self.parser.add_argument('--feat_latent_size', type=int, default=256,
                              help='Size of convolutional features')
     self.parser.add_argument('--image_size', type=int, nargs='+', default=[64, 64])
 
@@ -34,7 +34,7 @@ class BaseArgs:
                              help='Dimension of the manifold for the given time sequence')
 
     # Changing hyperparameters
-    self.parser.add_argument('--traj_length', type=int, default=9)
+    self.parser.add_argument('--traj_length', type=int, default=13)
 
     # self.parser.add_argument('--weight_dim', type=float, default=0.001,
     #                          help='Weight of the manifold dimension loss - alpha')

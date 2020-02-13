@@ -120,8 +120,13 @@ def gram_matrix(y, delta=0, unbiased = False, diff = False):
     # H = y[:, :, reHidex].view(chan, T, nr, nc)
     H = y[:, reHidex].view(-1, nr, nc)
     G = torch.matmul(H, H.permute(0,2,1))
+    Gnorm = torch.norm(G.view(H.shape[0], 1, nr*nc), dim=2).unsqueeze(-1)
+    G = G/Gnorm
     if delta!=0:
         G = G + delta*torch.eye(nr, nc).cuda()
+
+
+    #TODO: Nomalize G
 
     return G
 

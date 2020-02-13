@@ -28,7 +28,7 @@ class TrajectoryMultiple(data.Dataset):
     self.max_order = 2        # Maximum order of the LTI systems generated IRs
     self.missing_data_perc = 0  # How many missing points in the trajectory
     self.pole_low, self.pole_high = 0.5, 1.5
-    self.clean = False
+    self.clean = True #TODO: change to false?
 
     # Specific parameters for generating multiple alternatives:
     # Gaussian distributions over different centroids
@@ -46,7 +46,7 @@ class TrajectoryMultiple(data.Dataset):
     # assert self.n_traj == 1
 
     if generate:
-      self.generate_dataset(traj_length, root=self.dset_path, training_samples=1e3, testing_samples=5e2)
+      self.generate_dataset(traj_length, root=self.dset_path, training_samples=1e5, testing_samples=5e3)
 
   def get_random_trajectory(self, traj_length=None, pole_limits = None, n_realizations = 2):
     ''' Generate a random sequence of an IR '''
@@ -98,7 +98,7 @@ class TrajectoryMultiple(data.Dataset):
       Generate branches - keep only the once origined on the first one
       '''
       num_forks = 1
-      data_ids = range(1, traj_length - 3)
+      data_ids = range(3, traj_length - 3)
       forks = random.sample(data_ids, num_forks)
 
       forked_trajs = []
@@ -160,6 +160,10 @@ class TrajectoryMultiple(data.Dataset):
       scores = np.ones((1, self.k, self.traj_length))
       trajectories = np.concatenate([trajectories.astype(float), scores], axis=0)
 
+      for tr in range(self.traj_length):
+        k_idx_perm = np.random.permutation(self.k)
+        trajectories[..., tr] = trajectories[..., k_idx_perm, tr]
+
     else:
       '''
       --------------------------------------------------------------------------------------------
@@ -207,6 +211,10 @@ class TrajectoryMultiple(data.Dataset):
       # Add score to trajectories
       scores = np.ones((1,self.k, self.traj_length))
       trajectories = np.concatenate([trajectories.astype(float), scores], axis=0)
+
+      for tr in range(self.traj_length):
+        k_idx_perm = np.randperm(self.k)
+        trajectories[..., tr] = trajectories[k_idx_perm, tr]
 
     return trajectories
 

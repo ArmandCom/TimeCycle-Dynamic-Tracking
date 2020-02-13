@@ -30,9 +30,9 @@ def args():
     # data
     parser.add_argument('--dset_dir', type=str, default=os.path.join('/data/Armand/', 'TimeCycle/'))
     parser.add_argument('--dset_name', type=str, default='traj_multi')
-    parser.add_argument('--generate_dset', type=str, default=False)
+    parser.add_argument('--generate_dset', type=str, default=True)
 
-    parser.add_argument('--traj_length', type=int, default=9)
+    parser.add_argument('--traj_length', type=int, default=13)
 
 
     opt = parser.parse_args()
@@ -62,18 +62,18 @@ def get_data_loader(opt):
 if __name__ == '__main__':
     opt = args()
     dloader = get_data_loader(opt)
-    for step, data in enumerate(dloader):
-
-        # Traj tree
-        # if step < 1:
-        #     for i in range(len(data[1][0,:])):
-        #         print('Fork id: ',data[1][0,i])
-        #         fig = plt.plot(data[0][0,i,0].numpy())
-        #         plt.savefig('example_traj_loaded')
-
-        # Traj multiple
-        if step < 1:
-            for i in range(data[0].shape[2]):
-                fig = plt.plot(data[0][0,0,i,:].numpy())
-                plt.savefig('example_traj_loaded')
-            plt.close()
+    # for step, data in enumerate(dloader):
+    #
+    #     # Traj tree
+    #     # if step < 1:
+    #     #     for i in range(len(data[1][0,:])):
+    #     #         print('Fork id: ',data[1][0,i])
+    #     #         fig = plt.plot(data[0][0,i,0].numpy())
+    #     #         plt.savefig('example_traj_loaded')
+    #
+    #     # Traj multiple
+    #     if step < 1:
+    #         for i in range(data[0].shape[2]):
+    #             fig = plt.plot(data[0][0,0,i,:].numpy())
+    #             plt.savefig('example_traj_loaded')
+    #         plt.close()
