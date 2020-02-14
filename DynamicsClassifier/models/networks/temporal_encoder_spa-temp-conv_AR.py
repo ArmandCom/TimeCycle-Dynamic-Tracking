@@ -18,7 +18,6 @@ class MaskedConv2d(nn.Conv2d): #BaseModule,
         assert kt == 3
         self.mask.fill_(0)
         self.mask[:, :, :kt // 2, :] = 1
-        #TODO: check how to avoid the weird mask
         if idx + (mask_type == 'B') > 0:
             self.mask[:, :, kt // 2, :idx + (mask_type == 'B')] = 1
 

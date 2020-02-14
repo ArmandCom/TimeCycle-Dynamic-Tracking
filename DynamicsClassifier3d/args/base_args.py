@@ -34,7 +34,7 @@ class BaseArgs:
                              help='Dimension of the manifold for the given time sequence')
 
     # Changing hyperparameters
-    self.parser.add_argument('--traj_length', type=int, default=7)
+    self.parser.add_argument('--traj_length', type=int, default=9)
 
     # self.parser.add_argument('--weight_dim', type=float, default=0.001,
     #                          help='Weight of the manifold dimension loss - alpha')

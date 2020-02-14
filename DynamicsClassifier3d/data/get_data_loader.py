@@ -32,7 +32,7 @@ def args():
     parser.add_argument('--dset_name', type=str, default='traj_multi')
     parser.add_argument('--generate_dset', type=str, default=True)
 
-    parser.add_argument('--traj_length', type=int, default=7)
+    parser.add_argument('--traj_length', type=int, default=9)
 
 
     opt = parser.parse_args()
@@ -50,7 +50,6 @@ def get_data_loader(opt):
     elif opt.dset_name == 'traj_multi':
         traj_trees = TrajectoryMultiple(opt.traj_length, dset_path=opt.dset_path, generate=opt.generate_dset)
         traj_data = [traj_trees.load_data(opt.is_train)]
-        # TODO: save with another file ext? unable to open shared memory object </torch_30896_57790118> in read-write mode. Might be a permission issue
     else:
         raise NotImplementedError
 

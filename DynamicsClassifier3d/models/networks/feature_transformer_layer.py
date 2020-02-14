@@ -33,12 +33,12 @@ class ARTransformerLayer(nn.Module):
         return x
 
 
-class PermuteLastLayers(nn.Module):
+class PermuteLastDims(nn.Module):
     '''
     Encodes images. Similar structure as DCGAN.
     '''
     def __init__(self):
-        super(PermuteLastLayers, self).__init__()
+        super(PermuteLastDims, self).__init__()
 
     def forward(self, x):
         return x.permute(0,1,3,2)
@@ -52,6 +52,26 @@ class PrintShape(nn.Module):
 
     def forward(self, x):
         print('Shape of tensor: ', x.shape)
+        return x
+
+class ARMask(nn.Module):
+    '''
+    Encodes images. Similar structure as DCGAN.
+    '''
+    def __init__(self, shape, traj_length, n_act_t):
+        super(ARMask, self).__init__()
+        self.shape = shape
+        self.T = traj_length
+        self.mask = self.generate_mask(n_act_t)
+
+    def generate_masks(self, n_act_t):
+        mask_layout = torch.zeros(self.shape, self.T)
+        mask_layout[:,:n_act_t] = torch.ones(self.shape, n_act_t).unsqueeze(0).unsqueeze(1)
+        # mask_layout[:,:n_act_t] = torch.ones(self.shape, n_act_t).unsqueeze(0).unsqueeze(1)
+        return mask_layout
+
+    def forward(self, x):
+        x = x * self.mask[..., :x.shape[-1]]
         return x
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ from models.networks.temporal_encoder_block_AR import TemporalEncoderSelector
 from models.networks.selection import SelectionByAttention
 
 from utils.hankel import gram_matrix
+from utils.utils import format_input
 from utils import *
 from utils.soft_argmax import SoftArgmax1D
 
@@ -32,6 +33,7 @@ class DynClass(BaseModel):
 
     self.delta = 1e-3
 
+    self.shape = 64
     self.is_train = opt.is_train
     self.image_size = opt.image_size[-1]
     self.T = opt.traj_length
@@ -134,18 +136,16 @@ class DynClass(BaseModel):
     batch_size, n_chan, n_dim, traj_length = input.size()
 
     # Note: Shuffle data in the K dimension --> Now done in data generation
-    # for tr in range(self.T):
-    #   k_idx_perm = torch.randperm(self.K)
-    #   input[..., tr] = input[..., k_idx_perm, tr]
 
     # Note: unbias and normalize sequences
     # TODO: normalize single sequences in the source (before shuffling) --> would this be cheating?
     # seqs_norm = torch.norm(input[:,0:2].view(batch_size, 2, -1), dim=2).unsqueeze(-1).unsqueeze(-1)
     # input[:,0:2] = input[:,0:2]/seqs_norm
-    seqs_mean = input[:,0:2].view(batch_size, 2, -1).mean(2).unsqueeze(-1).unsqueeze(-1)
-    input[:,0:2] -= seqs_mean
+    # seqs_mean = input[:,0:2].view(batch_size, 2, -1).mean(2).unsqueeze(-1).unsqueeze(-1)
+    # input[:,0:2] -= seqs_mean
 
-    input = Variable(input.cuda(), requires_grad=True)
+    input_score, input_coord, input_reshaped = format_input(input, 0, self.shape, save_test=False)
+    input = Variable(input_score.cuda(), requires_grad=True)
 
 
     numel = batch_size * traj_length * n_dim
@@ -153,45 +153,14 @@ class DynClass(BaseModel):
 
     # Note: option 1: time encoding + selection different modules
     '''Encode'''
-    encoder_input = input[:, 0:2]
-    scores = input[:, 2:3]
-    # t_enc = self.temporal_encoding(encoder_input)
-    #
-    # '''Selection by attention'''
-    # heat_map = self.selection_by_attention(t_enc)
+    encoder_input = input
 
-    # Note: option 2: selection by convolution + same-time-step correlations
-    heat_map = self.temporal_encoding(encoder_input) # TODO: check gradients
+    coord = self.temporal_encoding(encoder_input)
 
     '''Resulting trajectory'''
-    #Note: option 1: argmax !!Non-differentiable
-    #TODO: mask, minimize entropy as in PPO, multiply (normalize by max?)
-    # heat_map = torch.softmax(heat_map, dim=1)
-    # heat_map = torch.sigmoid(heat_map)
-    # val, idx = heat_map.max(1)
-    # selected = torch.gather(encoder_input, dim=2, index=idx.view(batch_size, 2, 1, traj_length))
-
-    #Note: option 2: attention + distributions + entropy + softargmax
-    # # heat_map = torch.sigmoid(heat_map)
-    # heat_map_softmax = torch.softmax(heat_map, dim=1)
-    # entropy = 0
-    # distr = []
-    # indices = []
-    # # samples = []
-    # distr.append(Categorical(heat_map_softmax))
-    # #TODO: this categorical is not right (computed over T)
-    # for t in range(self.T):
-    #   entropy += distr[t].entropy().mean()
-    #   indices.append(self.softargmax(heat_map[...,t]))
-    #   # samples.append(distr[t].sample().view(batch_size, 2, 1))
-    # # idx = torch.stack(samples, dim=-1)
-    # indices = torch.stack(indices, dim=-1)
-    # idx = torch.round(indices).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=idx.unsqueeze(1))
 
     # Note: option 3: attention + distributions + entropy + softindices
     # heat_map = torch.sigmoid(heat_map)
-    heat_map = torch.softmax(heat_map, dim=1) #TODO: Review option
     heat_map = heat_map / heat_map.max(1)[0].unsqueeze(1)
     entropy = 0
     distr = []
