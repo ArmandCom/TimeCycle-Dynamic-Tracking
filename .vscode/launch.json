@@ -16,6 +16,17 @@
             "env": {"PYTHONPATH":"/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask/experiments/siammask_sharp:/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask/experiments/siammask_sharp:/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask"},
             "args":["--resume","../experiments/siammask_sharp/SiamMask_DAVIS.pth","--config","../experiments/siammask_sharp/config_davis.json","--base_path","/data/Ponc/tracking/JPEGImages/480p/nhl/"],
             
+        },
+        {
+            "name": "Python: Prova file",
+            "type": "python",
+            "request": "launch",
+            "cwd": "/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask/tools/",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {"PYTHONPATH":"/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask/experiments/siammask_sharp:/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask/experiments/siammask_sharp:/home/ppalau/TimeCycle-Dynamic-Tracking/SiamMask"},
+            // "args":["--resume","../experiments/siammask_sharp/SiamMask_DAVIS.pth","--config","../experiments/siammask_sharp/config_davis.json","--base_path","/data/Ponc/tracking/JPEGImages/480p/nhl/"],
+            
         }
     ]
 }
