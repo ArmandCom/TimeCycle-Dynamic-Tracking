@@ -6,10 +6,10 @@ import scipy.io as sio
 import numpy as np
 import scipy.misc
 
-from data.traj_tree import TrajectoryTree
-from data.traj_multiple import TrajectoryMultiple
-# from traj_tree import TrajectoryTree
-# from traj_multiple import TrajectoryMultiple
+# from data.traj_tree import TrajectoryTree
+# from data.traj_multiple import TrajectoryMultiple
+from traj_tree import TrajectoryTree
+from traj_multiple import TrajectoryMultiple
 
 import argparse
 import matplotlib.pyplot as plt

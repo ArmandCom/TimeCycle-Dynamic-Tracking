@@ -32,7 +32,7 @@ def args():
     parser.add_argument('--dset_name', type=str, default='traj_multi')
     parser.add_argument('--generate_dset', type=str, default=True)
 
-    parser.add_argument('--traj_length', type=int, default=9)
+    parser.add_argument('--traj_length', type=int, default=11)
 
 
     opt = parser.parse_args()

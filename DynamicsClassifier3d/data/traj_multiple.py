@@ -7,6 +7,7 @@ import torch
 import torch.utils.data as data
 import numpy as np
 import matplotlib.pyplot as plt
+# from hankel import gram_matrix, trace_G, JBLDLoss, JBLDLoss_rolling, JBLDLoss_rolling_to_all
 
 class TrajectoryMultiple(data.Dataset):
   def __init__(self, traj_length, dset_path = '', generate=False):
@@ -42,9 +43,13 @@ class TrajectoryMultiple(data.Dataset):
 
     # For equal number of points around each centroid
     assert(self.k%(self.n_alt_centroids+1) == 0)
-    # For this specific case [self.n_traj] must be 1 and n_realizations 2.
-    # Note: We can also reverse it
-    # assert self.n_traj == 1
+
+
+    self.delta = 1e-3
+
+    self.loss_dynamics_ld = lambda S: torch.logdet(gram_matrix(S, delta=self.delta)).mean()
+    # self.loss_dynamics_tr = lambda S: trace_G(gram_matrix(S))
+    self.loss_dynamics_jbld = lambda S: JBLDLoss_rolling(S, delta=self.delta, sz=9)
 
     if generate:
       self.generate_dataset(traj_length, root=self.dset_path, training_samples=1e5, testing_samples=5e3)
@@ -135,9 +140,10 @@ class TrajectoryMultiple(data.Dataset):
 
       # Add points distributed around the centroids
 
-      centroids_false = np.around(np.random.normal(0, self.std_max_rand,
+      centroids_false = np.clip(np.around(np.random.normal(0, self.std_max_rand,
                                                    size=(2, self.n_traj, self.n_points_centroid,
-                                                         self.traj_length))).astype(int)
+                                                         self.traj_length))).astype(int), a_min=-3, a_max=3)
+      # TODO: make proportional to the divergence of the sequence
       # centroids_false = np.around(np.random.uniform(self.centroid_min_randint, self.centroid_max_randint, size=(2, self.n_traj, self.n_points_centroid,
       #                                                    self.traj_length))).astype(int)
 
@@ -196,6 +202,9 @@ class TrajectoryMultiple(data.Dataset):
 
         # Note: First point is known, therefore equal
         trajectories[..., :1] = trajectories[..., :1, :1]
+
+        # Note: print linearity losses - Trace is clearly worse.
+        self.check_lin_loss(trajectories)
 
         #Note: Shuffle points in K dimension
         for tr in range(self.traj_length):
@@ -306,6 +315,14 @@ class TrajectoryMultiple(data.Dataset):
 
     return inp
 
+  def check_lin_loss(self, traj):
+
+    traj = torch.FloatTensor(traj)
+    for i in range(traj.shape[-2]):
+      loss_dynamics_ld = self.loss_dynamics_ld(traj[0:1, i:i+1, :])
+      loss_dynamics_jbld = self.loss_dynamics_jbld(traj[0:1, i:i+1, :])
+      print(loss_dynamics_jbld, '\t', loss_dynamics_ld)
+    print('\n ----- \n')
 
 def main():
 

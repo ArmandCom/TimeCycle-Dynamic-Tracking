@@ -43,8 +43,8 @@ def gram_nuclear_norm(y, gid):
     return gnn
 
 def unbias_seq(ts):
-    mean = torch.mean(ts, dim=-1)
-    ts = ts - mean.unsqueeze(-1)
+    mean = torch.mean(ts, dim=2)
+    ts = ts - mean.unsqueeze(2)
     return ts
 
 def hankel_matrix(y, unbiased = False, diff = False):
@@ -123,7 +123,7 @@ def gram_matrix(y, delta=0, unbiased = False, diff = False):
     Gnorm = torch.norm(G.view(H.shape[0], 1, nr*nc), dim=2).unsqueeze(-1)
     G = G/Gnorm
     if delta!=0:
-        G = G + delta*torch.eye(nr, nc).cuda()
+        G = G + delta*torch.eye(nr, nc)
 
     return G
 
@@ -163,7 +163,7 @@ def gram_matrix_sized(y, delta=0, size=None, unbiased = False, diff = False):
     Gnorm = torch.norm(G.view(H.shape[0], 1, nr*nr), dim=2).unsqueeze(-1)
     G = G/Gnorm
     if delta!=0:
-        G = G + delta*torch.eye(nr, nr).cuda()
+        G = G + delta*torch.eye(nr, nr)
 
     return G
 
@@ -171,7 +171,6 @@ def JBLD(Gx,Gy):
     return torch.logdet((Gx + Gy)/2) - (torch.logdet(Gx) + torch.logdet(Gy))/2
 
 def JBLDLoss(S, delta):
-    # TODO: specify size of G (min of all)
     traj_length_1 = int(S.shape[-1] // 2)
     if S.shape[-1]%2 == 1:
         if traj_length_1%2 == 0:
@@ -193,10 +192,10 @@ def JBLDLoss(S, delta):
         G1 = gram_matrix_sized(S[..., :traj_length_1],        delta=delta, size=sz)
         G2 = gram_matrix_sized(S[..., traj_length_1:],        delta=delta, size=sz)
 
-    return JBLD(G1, G_tot) + JBLD(G2, G_tot) #Note: Not working properly
+    return torch.max(JBLD(G1, G_tot),JBLD(G2, G_tot))
 
 def JBLDLoss_rolling(S, delta, sz=None):
-    unbiased=False
+
     if sz is None and S.shape[-1]%2==0:
         sz = S.shape[-1] - 1
     elif sz is None and S.shape[-1]%2==1:
@@ -205,13 +204,33 @@ def JBLDLoss_rolling(S, delta, sz=None):
 
     jblds = []
     for t in range(S.shape[-1]-sz):
-        G1 = gram_matrix(S[..., t  :t+sz  ],  delta=delta, unbiased=unbiased)
-        G2 = gram_matrix(S[..., t+1:t+sz+1],  delta=delta, unbiased=unbiased)
+        G1 = gram_matrix(S[..., t:t+sz],        delta=delta)
+        G2 = gram_matrix(S[..., t+1:t+sz+1],  delta=delta)
         jblds.append(JBLD(G1, G2))
     jblds = torch.cat(jblds)
 
 
     return jblds.max()
+
+def JBLDLoss_rolling_to_all(S, delta, sz=None):
+
+    if sz is None and S.shape[-1]%2==0:
+        sz = S.shape[-1] - 1
+    elif sz is None and S.shape[-1]%2==1:
+        sz = S.shape[-1] - 2
+    else:
+        assert sz%2==1
+
+    jblds = []
+    for t in range(S.shape[-1]-sz+1):
+        G1 = gram_matrix(S[..., t:t+sz],        delta=delta)
+        G2 = gram_matrix_sized(S,  delta=delta, size=((sz+1)/2))
+        jblds.append(JBLD(G1, G2))
+    jblds = torch.cat(jblds)
+
+
+    return jblds.max()
+
 
 def comp_gram_matrix(y_ini, delta=0, unbiased = False, diff = False, pairwise=None):
 

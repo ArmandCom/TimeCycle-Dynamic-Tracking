@@ -7,6 +7,7 @@ import torch
 import torch.utils.data as data
 import numpy as np
 import matplotlib.pyplot as plt
+from utils.hankel import *
 
 class TrajectoryMultiple(data.Dataset):
   def __init__(self, traj_length, dset_path = '', generate=False):
@@ -41,9 +42,6 @@ class TrajectoryMultiple(data.Dataset):
 
     # For equal number of points around each centroid
     assert(self.k%(self.n_alt_centroids+1) == 0)
-    # For this specific case [self.n_traj] must be 1 and n_realizations 2.
-    # Note: We can also reverse it
-    # assert self.n_traj == 1
 
     if generate:
       self.generate_dataset(traj_length, root=self.dset_path, training_samples=1e5, testing_samples=5e3)
@@ -161,8 +159,8 @@ class TrajectoryMultiple(data.Dataset):
       trajectories = np.concatenate([trajectories.astype(float), scores], axis=0)
 
       # Note: normalize sequences:
-      traj_norm = np.linalg.norm(trajectories, axis=-1)[..., np.newaxis]
-      trajectories /= traj_norm
+      # traj_norm = np.linalg.norm(trajectories, axis=-1)[..., np.newaxis]
+      # trajectories /= traj_norm
 
       # Note: order elements in K dimension
       # for tr in range(self.traj_length):
@@ -266,7 +264,6 @@ class TrajectoryMultiple(data.Dataset):
     inp = torch.FloatTensor(data) # Not sure it should be float
 
     return inp
-
 
 def main():
 

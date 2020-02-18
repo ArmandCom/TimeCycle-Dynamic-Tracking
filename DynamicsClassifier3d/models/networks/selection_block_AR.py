@@ -1,9 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.functional as F
+from functools import reduce
+from operator import mul
 from models.networks.feature_transformer_layer import ARMask
 from models.networks.feature_transformer_layer import PermuteLastDims
 from models.networks.feature_transformer_layer import PrintShape
+from models.networks.blocks_2d import DownsampleBlock
 import math
 
 class TemporalEncoder(nn.Module):
@@ -68,6 +70,23 @@ class TemporalEncoder(nn.Module):
             hidden_size *= 2
 
 
+        activation_fn = nn.LeakyReLU()
+
+        # Convolutional network
+        self.conv = nn.Sequential(
+            DownsampleBlock(channel_in=c, channel_out=32, activation_fn=activation_fn),
+            DownsampleBlock(channel_in=32, channel_out=64, activation_fn=activation_fn),
+        )
+        self.deepest_shape = (64, h // 4, w // 4)
+
+        # FC network
+        self.fc = nn.Sequential(
+            nn.Linear(in_features=reduce(mul, self.deepest_shape), out_features=64),
+            nn.BatchNorm1d(num_features=64),
+            activation_fn,
+            nn.Linear(in_features=64, out_features=code_length),
+            nn.Sigmoid()
+        )
     def forward(self, x):
 
         # Input: [2N,1,K,T]
@@ -88,14 +107,14 @@ class TemporalEncoder(nn.Module):
 
         parallel_modules = []
         for t in range(1, self.T):
-            parallel_modules = nn.Sequential(*[
+            parallel_modules.append(nn.Sequential(*[
                       nn.Conv2d(in_channels=input_size,
                                 out_channels=output_size,
                                 kernel_size=[3, t],
                                 stride = 1,
                                 padding = [1, t]),
                       nn.BatchNorm2d(output_size),
-                      nn.LeakyReLU(0.2, inplace=True)]).cuda()
+                      nn.LeakyReLU(0.2, inplace=True)]).cuda())
             # ARMask(current_shape, self.T, n_act_t=t),
 
         return parallel_modules

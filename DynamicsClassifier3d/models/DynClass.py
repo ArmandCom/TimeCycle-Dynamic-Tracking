@@ -1,18 +1,15 @@
-from collections import defaultdict
-import itertools
-import numpy as np
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
 from .base_model import BaseModel
-# from models.networks.temporal_encoder_conv_AR import Estimator2D
-from models.networks.selection_block_AR import TemporalEncoder
-from models.networks.temporal_encoder_block_AR import TemporalEncoderSelector
-from models.networks.selection import SelectionByAttention
+from models.networks.selection_AR_encoder import TemporalEncoder
 
-from utils.hankel import gram_matrix
+from utils.hankel import gram_matrix, JBLDLoss_rolling
+#TODO: write JBLDLoss as class
+from utils.utils import closest_sequence
 from utils.utils import format_input
 from utils import *
 from utils.soft_argmax import SoftArgmax1D
@@ -20,18 +17,17 @@ from utils.soft_argmax import SoftArgmax1D
 from torch.distributions import *
 
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-
-# TODO: trick! Switch from run to debug and vice versa --> hold Shift.
+import numpy as np
 
 class DynClass(BaseModel):
 
   def __init__(self, opt):
     super(DynClass, self).__init__()
 
-    self.delta = 1e-3
+    self.delta = 5e-4
+    self.weight_1nn = 1
 
     self.shape = 64
     self.is_train = opt.is_train
@@ -45,9 +41,9 @@ class DynClass(BaseModel):
     self.batch_size = opt.batch_size
 
     # Dimensions
-    self.feat_latent_size = opt.feat_latent_size
-    self.time_enc_size = opt.time_enc_size
-    self.manifold_size = opt.manifold_size
+    # self.feat_latent_size = opt.feat_latent_size
+    # self.time_enc_size = opt.time_enc_size
+    # self.manifold_size = opt.manifold_size
 
     # Training parameters
     if opt.is_train:
@@ -58,43 +54,33 @@ class DynClass(BaseModel):
     self.setup_networks()
 
     # Losses
-    # self.loss_mse = nn.MSELoss() # reduction 'mean'
+    self.loss_mse = nn.MSELoss() # reduction 'mean'
+    self.loss_mse_keepdim = nn.MSELoss(reduction='none')
     # self.loss_l1 = nn.L1Loss(reduction='none')
 
-    lin_mode = 'ld'
-    if lin_mode == 'ld':
-        self.loss_dynamics = lambda S: torch.logdet(gram_matrix(S, delta=self.delta)).mean()
-    elif lin_mode == 'tr':
-        self.loss_dynamics = lambda S, flag='g': get_trace_K(M, flag).mean()
+    # Note: Whole sequence logdet
+    # self.loss_dynamics = lambda S: torch.logdet(gram_matrix(S, diff=True, delta=self.delta)).mean() #Note: [...,:-1], diff = False
+    # Note: Rolling window logdet
+    # self.loss_dynamics, self.subtraj_length = lambda S: torch.logdet(gram_matrix(S, diff=False, delta=self.delta)), self.T-1
+    # Note: JBLD
+    self.loss_dynamics_jbld = lambda S: JBLDLoss_rolling(S, delta=self.delta, sz=9)
+
+    # Note: Mean distance to NNs
+    # self.loss_1nn = lambda S, Sall: self.loss_mse(S, closest_sequence(S, Sall))
+    # Note: Max distance to NN
+    self.loss_1nn = lambda S, Sall: self.loss_mse_keepdim(S, closest_sequence(S, Sall)).max(-1)[0].mean()
+
   def setup_networks(self):
     '''
     Networks for DDPAE.
     '''
     self.nets = {}
 
-    # Time encoding network 1
-    # time_encoder_model = Estimator2D(
-    #   code_length=self.T,
-    #   fm_list=[4, 8, 16, 32],
-    #   cpd_channels=self.feat_latent_size
-    # )
-
-    # Time encoding network 2
-    # time_encoder_model = TemporalEncoder(self.K, self.T, self.feat_latent_size, skip_connections=True)
-    # self.time_encoder_model = nn.DataParallel(time_encoder_model.cuda())
-    # self.nets['time_encoder_model'] = self.time_encoder_model
-
     # Time encoding network 3 - also selector
-    time_encoder_model = TemporalEncoder(self.K, self.T, self.feat_latent_size, skip_connections=True)
+    time_encoder_model = TemporalEncoder([1, self.shape, self.T])
+    #TODO: separate time encoders from one side to the other and concatenate result of the first at the second entry (inside model)
     self.time_encoder_model = nn.DataParallel(time_encoder_model.cuda())
     self.nets['time_encoder_model'] = self.time_encoder_model
-
-    # Selection network
-    selection_model = SelectionByAttention(in_channels= self.feat_latent_size,
-                                           indep_channels = self.T * self.K)
-    # Note in_channels is 2*self_latent_size when we use the other AR Time Encoder.
-    self.selection_model = nn.DataParallel(selection_model.cuda())
-    self.nets['selection_model'] = self.selection_model
 
     # self.softmax = nn.Softmax(dim=1)
     # softargmax = SoftArgmax1D()
@@ -107,25 +93,14 @@ class DynClass(BaseModel):
     if not self.is_train:
       return
 
-    params = []
-    # for name, net in self.nets.items():
-    #   # if name != 'encoder_model': # Note: Impose decoder different optimizer than encoder
-    #   params.append(net.parameters())
-    #TODO: remember including all models in the optimizer
     self.optimizer = torch.optim.Adam( \
-      [{'params': self.time_encoder_model.parameters(), 'lr': self.lr_init},
-       {'params': self.selection_model.parameters(), 'lr': self.lr_init}
+      [{'params': self.time_encoder_model.parameters(), 'lr': self.lr_init}
        ], betas=(0.9, 0.999))
 
     print('Parameters of time_encoder_model: ', self.time_encoder_model.parameters())
 
   def temporal_encoding(self, input):
     o = self.time_encoder_model(input)
-    # Note: reverse? different networks?
-    return o
-
-  def selection_by_attention(self, input):
-    o = self.selection_model(input)
     return o
 
   # def classify(self, latent):
@@ -133,68 +108,50 @@ class DynClass(BaseModel):
 
   def train(self, input, step):
 
-    batch_size, n_chan, n_dim, traj_length = input.size()
-
-    # Note: Shuffle data in the K dimension --> Now done in data generation
-
     # Note: unbias and normalize sequences
-    # TODO: normalize single sequences in the source (before shuffling) --> would this be cheating?
     # seqs_norm = torch.norm(input[:,0:2].view(batch_size, 2, -1), dim=2).unsqueeze(-1).unsqueeze(-1)
     # input[:,0:2] = input[:,0:2]/seqs_norm
     # seqs_mean = input[:,0:2].view(batch_size, 2, -1).mean(2).unsqueeze(-1).unsqueeze(-1)
     # input[:,0:2] -= seqs_mean
 
     input_score, input_coord, input_reshaped = format_input(input, 0, self.shape, save_test=False)
-    input = Variable(input_score.cuda(), requires_grad=True)
 
+    input = Variable(input_score.cuda(), requires_grad=True) #TODO: add offset in second trajectory
+    input_reshaped = Variable(input_reshaped.cuda(), requires_grad=True)
 
+    batch_size, n_chan, n_dim, traj_length = input_reshaped.size()
     numel = batch_size * traj_length * n_dim
     loss_dict = {}
 
     # Note: option 1: time encoding + selection different modules
     '''Encode'''
     encoder_input = input
+    soft_coord = self.temporal_encoding(encoder_input)
 
-    coord = self.temporal_encoding(encoder_input)
+    # Give ground truth to the first point.
+    soft_coord = torch.cat([input_reshaped[..., 0:1, 0:1],soft_coord[..., 1:]], dim=-1)
 
-    '''Resulting trajectory'''
+    #  Note: Option 1: loss_dynamics iteratively
+    # loss_dynamics = torch.FloatTensor((-1e7,)).cuda().repeat(soft_coord.shape[0])
+    # for t_init in range(self.T - self.subtraj_length + 1):
+    #   loss_dynamics = torch.max(loss_dynamics, self.loss_dynamics(soft_coord.squeeze(-2)[..., t_init:t_init+self.subtraj_length]))
+    # loss_dynamics = loss_dynamics.mean()
 
-    # Note: option 3: attention + distributions + entropy + softindices
-    # heat_map = torch.sigmoid(heat_map)
-    heat_map = heat_map / heat_map.max(1)[0].unsqueeze(1)
-    entropy = 0
-    distr = []
-    soft_coord = []
-    for t in range(self.T):
-      distr.append(Categorical(heat_map[..., t]))
-      entropy += distr[t].entropy().mean()
-      soft_coord.append(torch.bmm(heat_map     [..., t].unsqueeze(-2),
-                                  encoder_input[..., t].reshape(-1, n_dim, 1)).squeeze())
-    soft_coord = torch.stack(soft_coord, dim=-1).unsqueeze(1)
-    # selected = torch.round(soft_coord).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=indices.unsqueeze(1))
-
-    # For representation:
-    val, idx = heat_map.max(1)
-    selected = torch.gather(encoder_input, dim=2, index=idx.view(batch_size, 2, 1, traj_length))
-
-    # Note: option 4: directly output coordinate, minimize soft-euclidean distance with nearest neighbor.
-
-    '''Losses'''
-    #TODO: Try Trace of G
-    loss_dynamics = self.loss_dynamics(soft_coord)
+    #  Note: Option 2: loss_dynamics at once
+    loss_dynamics = self.loss_dynamics_jbld(soft_coord.squeeze(-2))
     loss_dict['Logdet_G'] = loss_dynamics.item()
 
-    loss_entropy = entropy
-    loss_dict['Entropy'] = loss_entropy.item()
+    loss_1nn = self.loss_1nn(soft_coord, input_reshaped)
+    loss_dict['loss_1nn'] = loss_1nn.item()
 
-    if step%100 == 1:
-      quick_represent(encoder_input[0, 0], soft_coord.view(batch_size, 2, -1)[0,0], name='example_result_soft')
-      quick_represent(encoder_input[0, 0], selected[0, 0, 0], name='example_result_hard')
-      print('\n-loss_entropy: ', loss_entropy, '\nloss_dynamics: ', loss_dynamics)
+    if step%50 == 1:
+      selected = closest_sequence(soft_coord, input_reshaped)
+      quick_represent(input_reshaped[0, 0], soft_coord.view(batch_size, -1)[0], name='example_result_soft')
+      # quick_represent(input_reshaped[0, 0], selected[0, 0, 0], name='example_result_hard')
+      print('\n-loss_1nn: ', loss_1nn, '\nloss_dynamics: ', loss_dynamics)
 
     '''Optimizer step'''
-    loss = loss_dynamics + 0.01 * loss_entropy
+    loss = loss_dynamics + self.weight_1nn * loss_1nn
     loss_dict['Total_loss'] = loss.item()
     loss.backward()
     self.optimizer.step()
@@ -206,81 +163,43 @@ class DynClass(BaseModel):
     '''
     Return decoded output.
     '''
-    res_dict = {}
-
-    input = Variable(input.cuda())
-    batch_size, n_chan, n_dim, traj_length = input.size()
-    numel = batch_size * traj_length * n_dim
-    # gt = torch.cat([input, output], dim=1)
-
-    gt = input
 
     # Note: option 1: time encoding + selection different modules
     '''Encode'''
-    encoder_input = input[:, 0:2]
-    scores = input[:, 2:3]
-    # t_enc = self.temporal_encoding(encoder_input)
-    #
-    # '''Selection by attention'''
-    # heat_map = self.selection_by_attention(t_enc)
+    input_score, input_coord, input_reshaped = format_input(input, 0, self.shape, save_test=False)
+    input = Variable(input_score.cuda())
+    input_reshaped = Variable(input_reshaped.cuda())
 
-    # Note: option 2: selection by convolution + same-time-step correlations
-    heat_map = self.temporal_encoding(encoder_input)
+    batch_size, n_chan, n_dim, traj_length = input_reshaped.size()
 
+    numel = batch_size * traj_length * n_dim
+    res_dict = {}
 
-    '''Resulting trajectory'''
-    #Note: option 1: argmax !!Non-differentiable
-    # heat_map = torch.softmax(heat_map, dim=1)
-    # heat_map = torch.sigmoid(heat_map)
-    # val, idx = heat_map.max(1)
-    # selected = torch.gather(heat_map, dm=1, index=idx.unsqueeze(1))
+    # Note: option 1: time encoding + selection different modules
+    '''Encode'''
+    encoder_input = input
+    soft_coord = self.temporal_encoding(encoder_input)
 
-    #Note: option 2: attention + distributions + entropy + softargmax
-    # # heat_map = torch.sigmoid(heat_map)
-    # heat_map_softmax = torch.softmax(heat_map, dim=1)
-    # entropy = 0
-    # distr = []
-    # indices = []
-    # # samples = []
-    # distr.append(Categorical(heat_map_softmax))
-    # #TODO: this categorical is not right (computed over T)
-    # for t in range(self.T):
-    #   entropy += distr[t].entropy().mean()
-    #   indices.append(self.softargmax(heat_map[...,t]))
-    #   # samples.append(distr[t].sample().view(batch_size, 2, 1))
-    # # idx = torch.stack(samples, dim=-1)
-    # indices = torch.stack(indices, dim=-1)
-    # idx = torch.round(indices).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=idx.unsqueeze(1))
-
-    # Note: option 3: attention + distributions + entropy + softindices
-    # heat_map = torch.sigmoid(heat_map)
-    heat_map = torch.softmax(heat_map, dim=1)
-    heat_map = heat_map / heat_map.max(1)[0].unsqueeze(1)
-    entropy = 0
-    distr = []
-    soft_coord = []
-    for t in range(self.T):
-      distr.append(Categorical(heat_map[..., t]))
-      entropy += distr[t].entropy().mean()
-      soft_coord.append(torch.bmm(heat_map[..., t].unsqueeze(-2),
-                                  encoder_input[..., t].reshape(-1, n_dim, 1)).squeeze())
-    soft_coord = torch.stack(soft_coord, dim=-1).unsqueeze(1)
-    # selected = torch.round(soft_coord).long()
-    # selected = torch.gather(encoder_input.reshape(-1, n_dim, traj_length), dim=1, index=indices.unsqueeze(1))
-
-    # Note: option 4: directly output coordinate, minimize soft-euclidean distance with nearest neighbor.
-
+    # Give ground truth to the first point.
+    soft_coord = torch.cat([input_reshaped[..., 0:1, 0:1],soft_coord[..., 1:]], dim=-1)
 
     '''Losses'''
-    loss_dynamics = self.loss_dynamics(soft_coord)
+    #  Note: Option 1: loss_dynamics iteratively
+    # loss_dynamics = torch.FloatTensor((-1e7,)).cuda().repeat(soft_coord.shape[0])
+    # for t_init in range(self.T-self.subtraj_length+1):
+    #   loss_dynamics = torch.max(loss_dynamics, self.loss_dynamics(soft_coord.squeeze(-2)[..., t_init:t_init+self.subtraj_length])).mean()
+    # loss_dynamics = loss_dynamics.mean()
+    # loss_dynamics = self.loss_dynamics(soft_coord.squeeze(-2))
+
+    #  Note: Option 2: loss_dynamics at once
+    loss_dynamics = self.loss_dynamics_jbld(soft_coord.squeeze(-2))
     res_dict['Logdet_G'] = loss_dynamics.item()
 
-    loss_entropy = entropy
-    res_dict['Entropy'] = loss_entropy.item()
+    loss_1nn = self.loss_1nn(soft_coord, input_reshaped)
+    res_dict['Entropy'] = loss_1nn.item()
 
     '''Optimizer step'''
-    loss = loss_dynamics + 0.1*loss_entropy
+    loss = loss_dynamics + self.weight_1nn * loss_1nn
     res_dict['Total_loss'] = loss.item()
 
     '''Other Losses'''
@@ -295,9 +214,16 @@ class DynClass(BaseModel):
 
     return lr_dict
 
+  def mask_frames(self, F):
+    F_masked = F
+    return F_masked
+
 def quick_represent(all, selected, name):
+  # for i in range(all.shape[0]):
+  #   plt.plot(all[i].detach().cpu().numpy())
+  t = np.arange(0,all.shape[1])
   for i in range(all.shape[0]):
-    plt.plot(all[i].detach().cpu().numpy())
+    plt.scatter(t, all[i].detach().cpu().numpy())
   plt.plot(selected.detach().cpu().numpy(), 'go--')
   plt.savefig('results/' + name)
   plt.close()

@@ -143,19 +143,24 @@ def format_input(X, chan, shape, save_test = False):
     axis_values = X[:, chan]
     scores = X[:, -1]
 
-
+    # TODO: check if it's fucking up all trajectories
+    # TODO: it should modify equall the blocks of K,T
     # Make sure trajectories fit in the image without losing their dynamics
-    min_per_traj = torch.round(axis_values).min(2)[0].unsqueeze(2).repeat(1, 1, X.shape[-1])
+    min_per_traj = torch.round(axis_values).min(2)[0].unsqueeze(2).repeat(1, 1, axis_values.shape[-1])
+    min_per_traj = torch.round(min_per_traj).min(1)[0].unsqueeze(1).repeat(1, axis_values.shape[1], 1)
     under0_idx = (min_per_traj < 0)
+
     if len(axis_values[under0_idx]) > 0:
-        print('Warning: Negative coordinates found')
-        axis_values[under0_idx] -= min_per_traj[under0_idx] - torch.rand(1)*shape/4
-    max_per_traj = torch.round(axis_values).max(2)[0].unsqueeze(2).repeat(1, 1, X.shape[-1])
+        # print('Warning: Negative coordinates found')
+        axis_values[under0_idx] -= min_per_traj[under0_idx] - torch.rand(1)*shape/8
+    max_per_traj = torch.round(axis_values).max(2)[0].unsqueeze(2).repeat(1, 1, axis_values.shape[-1])
+    max_per_traj = torch.round(max_per_traj).max(1)[0].unsqueeze(1).repeat(1, axis_values.shape[1], 1)
     overtop_idx = (max_per_traj >= shape)
     while len(axis_values[overtop_idx]) > 0:
-        print('Warning: /2 size reduction for fitting')
+        # print('Warning: /2 size reduction for fitting')
         axis_values[overtop_idx] /= 2
-        max_per_traj = torch.round(axis_values).max(2)[0].unsqueeze(2).repeat(1, 1, X.shape[-1])
+        max_per_traj = torch.round(axis_values).max(2)[0].unsqueeze(2).repeat(1, 1, axis_values.shape[-1])
+        max_per_traj = torch.round(max_per_traj).max(1)[0].unsqueeze(1).repeat(1, axis_values.shape[1], 1)
         overtop_idx = (max_per_traj >= shape)
 
     # Extract indexes
@@ -165,9 +170,17 @@ def format_input(X, chan, shape, save_test = False):
     layout_scores = torch.zeros(X.shape[0], shape, X.shape[-1])
     layout_coords = torch.zeros(X.shape[0], shape, X.shape[-1])
 
+    # TODO: also output the inverted
+    # layout_scores = torch.zeros(2*X.shape[0], shape, X.shape[-1])
+    # layout_coords = torch.zeros(2*X.shape[0], shape, X.shape[-1])
+    # axis_values_inv = shape - 1 - axis_values
+    # axis_values = torch.cat([axis_values, axis_values_inv], dim=0)
+    # scores = scores.repeat(2,1,1)
+    # idx = torch.round(axis_values).long()
+
     # Place scores in layout
-    layout_scores.scatter_(1, idx, scores).unsqueeze(1)
-    layout_coords.scatter_(1, idx, axis_values).unsqueeze(1)
+    layout_scores.scatter_(1, idx, scores)
+    layout_coords.scatter_(1, idx, axis_values)
 
     if save_test:
         for tr in range(axis_values.shape[1]):
@@ -175,7 +188,14 @@ def format_input(X, chan, shape, save_test = False):
             plt.savefig('test_plot_traj')
         sm.imsave('test_img_traj.png', layout_coords[0].numpy())
 
-    return layout_scores, layout_coords, axis_values
+    return layout_scores.unsqueeze(1), layout_coords.unsqueeze(1), axis_values.unsqueeze(1)
+
+def closest_sequence(S, Sall):
+    assert len(S.shape) == 4 and len(Sall.shape) == 4
+    dists = torch.abs(Sall-S)
+    nn_idx = dists.min(-2)[1].unsqueeze(-2)
+    nn = torch.gather(Sall, -2, nn_idx)
+    return nn
 
 
 def main():
@@ -197,9 +217,13 @@ def main():
     # print(M.shape)
     # print(Gs.shape)
 
-    traj_length = 9
-    k_points = 2
-    input = torch.randint(-1, 6, (2,2,k_points,traj_length)).float()
+    traj_length = 4
+    k_points = 3
+    input = torch.randint(-1, 6, (2,1,k_points,traj_length)).float()
+    selected = torch.ones(2,1,1,traj_length)
+
+    print(input[0,0], selected[0,0])
+    closest_sequence(selected, input)
     scores = torch.ones((2,1,k_points,traj_length)).float()
     input = torch.cat([input, scores], dim=1)
     shape = 8 # 4
