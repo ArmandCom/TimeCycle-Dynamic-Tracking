@@ -268,7 +268,7 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     armand_pesao = score.reshape(5,25,25)
     armand_pesao = np.amax(armand_pesao, axis=0)
     # np.save('/data/Ponc/tracking/results/mevasa/'+str(arrendatario)+'.npy', armand_pesao)
-    best_score_threshold = 0.95
+    best_score_threshold = 0.99
     for idx in range(0,N):
         if(idx==0):
             best_pscore_id = np.argmax(pscore)
@@ -361,11 +361,20 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
                     #     armand_pesao[delta_x, delta_y] = 1.5
 
                     if(debug):
+                        
                         im_debug_overlay = im_debug.copy()
                         im_debug_overlay[:,:,:] = np.array([0.0, 0.0, 0.0])
                         torch_data = np.float64(im_debug_overlay[:,:,0].copy())
+                        patch_size = crop_box_int[0]
+                        num_deltas = 25
+                        patch_ratio = int(patch_size/num_deltas)
+                        torch_data_delta_size = np.zeros( ( int(im_debug.shape[0]/patch_ratio), int(im_debug.shape[1]/patch_ratio) ) )
+                        offset_x_deltas = int(crop_box_int[0]/patch_ratio)
+                        offset_y_deltas = int(crop_box_int[1]/patch_ratio)
+
                         length_x = int((crop_box_int[2])/25)
                         length_y = int((crop_box_int[3])/25)
+                        
                         for i in range(25):
                             for j in range(25):
                                 step_x = crop_box_int[0] + i*length_x
@@ -373,11 +382,15 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
                                 im_debug_overlay[step_y: step_y + length_y, step_x: step_x+length_x, :] = np.array([0.0,0.0,0.0])
                                 im_debug_overlay[step_y: step_y + length_y, step_x: step_x+length_x, :] = np.uint8(armand_pesao[j,i] * np.array([0,165,255]))
                                 torch_data[step_y: step_y + length_y, step_x: step_x+length_x] = armand_pesao[j,i]*1.0
+                                # Now for the reshaped
+                                torch_data_delta_size[offset_y_deltas+j, offset_x_deltas+i] = armand_pesao[j,i]*1.0
+                                if(pscore[best_pscore_id] > best_score_threshold):
+                                    torch_data_delta_size[offset_y_deltas+delta_y, offset_x_deltas+delta_x] = 3.0
                                 # im_debug_overlay[step_x: step_x+length_x, step_y: step_y + length_y, :] = armand_pesao[j,i]
                                 
                         overlay_result = cv2.addWeighted(im_debug, 0.70, im_debug_overlay, 0.3, 0.0)
                         cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', overlay_result)
-                        np.save('/data/Ponc/tracking/torch_data/'+"{:05d}".format(arrendatario)+'.npy', torch_data)
+                        np.save('/data/Ponc/tracking/torch_data/resized/'+"{:05d}".format(arrendatario)+'.npy', torch_data_delta_size)
                         
                     np.save('/data/Ponc/tracking/results/mevasa/'+"{:05d}".format(arrendatario)+'.npy', armand_pesao)
                 else:  # empty mask

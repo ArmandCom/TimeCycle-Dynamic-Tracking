@@ -175,12 +175,12 @@ if __name__ == '__main__':
             
             cv2.polylines(im, [np.int0(location).reshape((-1, 1, 2))], True, (0, 255, 0), 3)
             cv2.putText(im,str(state['score']),(50,50),cv2.FONT_HERSHEY_COMPLEX,1.0,(0,255,0))
-            cv2.imwrite('/data/Ponc/tracking/results/nhl-debug/'+str(f)+'.jpeg', im)
+            cv2.imwrite('/data/Ponc/tracking/results/nhl-debug-train/'+str(f)+'.jpeg', im)
             all_bboxes.append(frame_boxes)
         toc += cv2.getTickCount() - tic
     
-    with open('/data/Ponc/tracking/centroids_tree_nhl.obj','wb') as fil:
-        pickle.dump(all_bboxes, fil)
+    # with open('/data/Ponc/tracking/centroids_tree_nhl.obj','wb') as fil:
+    #     pickle.dump(all_bboxes, fil)
     
     toc /= cv2.getTickFrequency()
     fps = f / toc
