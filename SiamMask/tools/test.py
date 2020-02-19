@@ -210,12 +210,13 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     pad = d_search / scale_x
     s_x = s_x + 2 * pad
     crop_box = [target_pos[0] - round(s_x) / 2, target_pos[1] - round(s_x) / 2, round(s_x), round(s_x)]
-    debug=False
+
+    debug=True
     if debug:
         im_debug = im.copy()
         crop_box_int = np.int0(crop_box)
         cv2.rectangle(im_debug, (crop_box_int[0], crop_box_int[1]),
-                      (crop_box_int[0] + crop_box_int[2], crop_box_int[1] + crop_box_int[3]), (255, 0, 0), 2)
+                      (crop_box_int[0] + crop_box_int[2], crop_box_int[1] + crop_box_int[3]), (255, 255, 0), 2)
         # cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', im_debug)
         cv2.waitKey(0)
 
@@ -264,10 +265,10 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     bboxes = np.zeros((6,N), dtype=np.float64) 
     # bboxes has the shape (6 , Npoints) ; 0=res_x, 1=res_y, 2=res_w, 3=res_h, 4=score, 5=best_pscore_id_tmp
     pscore = pscore * (1 - p.window_influence) + window * p.window_influence
-    armand_pesao = pscore.reshape(5,25,25)
+    armand_pesao = score.reshape(5,25,25)
     armand_pesao = np.amax(armand_pesao, axis=0)
-    np.save('/data/Ponc/tracking/results/mevasa/'+str(arrendatario)+'.npy', armand_pesao)
-    best_score_threshold = 0.99
+    # np.save('/data/Ponc/tracking/results/mevasa/'+str(arrendatario)+'.npy', armand_pesao)
+    best_score_threshold = 0.95
     for idx in range(0,N):
         if(idx==0):
             best_pscore_id = np.argmax(pscore)
@@ -308,6 +309,7 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
             delta_x, delta_y = best_pscore_id_mask[2], best_pscore_id_mask[1] # delta_x and delta_y are the selected coordinates in the volume
             
             if((delta_x, delta_y) not in deltas):
+                print("delta: (", delta_x, ", ", delta_y, ")")
                 deltas.append((delta_x,delta_y))
                 if refine_enable:
                     mask = net.track_refine((delta_y, delta_x)).to(device).sigmoid().squeeze().view(
@@ -352,8 +354,32 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
                     # box_in_img = pbox
                     rbox_in_img = prbox
                     box_score = bboxes[4, idx]
-                    rboxes.append( [rbox_in_img, box_score] )
+                    rboxes.append( [rbox_in_img, box_score ])
+                    # if(len(deltas) == 1):
+                    #     armand_pesao[delta_x, delta_y] = 3.5
+                    # else: 
+                    #     armand_pesao[delta_x, delta_y] = 1.5
 
+                    if(debug):
+                        im_debug_overlay = im_debug.copy()
+                        im_debug_overlay[:,:,:] = np.array([0.0, 0.0, 0.0])
+                        torch_data = np.float64(im_debug_overlay[:,:,0].copy())
+                        length_x = int((crop_box_int[2])/25)
+                        length_y = int((crop_box_int[3])/25)
+                        for i in range(25):
+                            for j in range(25):
+                                step_x = crop_box_int[0] + i*length_x
+                                step_y = crop_box_int[1] + j*length_y
+                                im_debug_overlay[step_y: step_y + length_y, step_x: step_x+length_x, :] = np.array([0.0,0.0,0.0])
+                                im_debug_overlay[step_y: step_y + length_y, step_x: step_x+length_x, :] = np.uint8(armand_pesao[j,i] * np.array([0,165,255]))
+                                torch_data[step_y: step_y + length_y, step_x: step_x+length_x] = armand_pesao[j,i]*1.0
+                                # im_debug_overlay[step_x: step_x+length_x, step_y: step_y + length_y, :] = armand_pesao[j,i]
+                                
+                        overlay_result = cv2.addWeighted(im_debug, 0.70, im_debug_overlay, 0.3, 0.0)
+                        cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', overlay_result)
+                        np.save('/data/Ponc/tracking/torch_data/'+"{:05d}".format(arrendatario)+'.npy', torch_data)
+                        
+                    np.save('/data/Ponc/tracking/results/mevasa/'+"{:05d}".format(arrendatario)+'.npy', armand_pesao)
                 else:  # empty mask
                     location = cxy_wh_2_rect(target_pos, target_sz)
                     rbox_in_img = np.array([[location[0], location[1]],

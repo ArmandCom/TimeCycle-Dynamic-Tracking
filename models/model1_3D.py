@@ -49,6 +49,9 @@ class Dyn3D(nn.Module):
 
 if __name__ == '__main__':
     # (B, C, D, H, W)
+
+
+    
     scores = torch.randn((2,1,9,25,25))
     xys = torch.empty((2,2,9,25,25))
     
