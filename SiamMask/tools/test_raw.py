@@ -202,7 +202,6 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     window = state['window']
     target_pos = state['target_pos']
     target_sz = state['target_sz']
-    print(im.shape)
     wc_x = target_sz[1] + p.context_amount * sum(target_sz)
     hc_x = target_sz[0] + p.context_amount * sum(target_sz)
     s_x = np.sqrt(wc_x * hc_x)
@@ -212,7 +211,7 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     s_x = s_x + 2 * pad
     crop_box = [target_pos[0] - round(s_x) / 2, target_pos[1] - round(s_x) / 2, round(s_x), round(s_x)]
 
-    debug=True
+    debug=False
     if debug:
         im_debug = im.copy()
         crop_box_int = np.int0(crop_box)
@@ -262,154 +261,78 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     pscore = penalty * score
 
     # cos window (motion model)
-    N = 17
-    bboxes = np.zeros((6,N), dtype=np.float64) 
+
+
     # bboxes has the shape (6 , Npoints) ; 0=res_x, 1=res_y, 2=res_w, 3=res_h, 4=score, 5=best_pscore_id_tmp
     pscore = pscore * (1 - p.window_influence) + window * p.window_influence
-    attmap = score.reshape(5,25,25)
-    attmap = np.amax(attmap, axis=0)
-    # np.save('/data/Ponc/tracking/results/mevasa/'+str(arrendatario)+'.npy', attmap)
-    best_score_threshold = 0.99
-    for idx in range(0,N):
-        if(idx==0):
-            best_pscore_id = np.argmax(pscore)
+    
+    best_pscore_id = np.argmax(pscore)
             
-        best_pscore_id_tmp = np.argmax(pscore)
-        pred_in_crop = delta[:, best_pscore_id_tmp] / scale_x
+    pred_in_crop = delta[:, best_pscore_id] / scale_x
     
-        lr = penalty[best_pscore_id_tmp] * score[best_pscore_id_tmp] * p.lr  # lr for OTB
+    lr = penalty[best_pscore_id] * score[best_pscore_id] * p.lr  # lr for OTB
 
-        res_x = pred_in_crop[0] + target_pos[0]
-        res_y = pred_in_crop[1] + target_pos[1]
-        res_w = target_sz[0] * (1 - lr) + pred_in_crop[2] * lr
-        res_h = target_sz[1] * (1 - lr) + pred_in_crop[3] * lr
-        
-        target_pos = np.array([res_x, res_y])
-        target_sz = np.array([res_w, res_h])
+    res_x = pred_in_crop[0] + target_pos[0]
+    res_y = pred_in_crop[1] + target_pos[1]
+    res_w = target_sz[0] * (1 - lr) + pred_in_crop[2] * lr
+    res_h = target_sz[1] * (1 - lr) + pred_in_crop[3] * lr
     
-        bboxes[0, idx] = target_pos[0]
-        bboxes[1, idx] = target_pos[1]
-        bboxes[2, idx] = target_sz[0]
-        bboxes[3, idx] = target_sz[1]
-        bboxes[4, idx] = pscore[best_pscore_id_tmp] #BUG: This should be pscore[best_...]?
-        bboxes[5, idx] = best_pscore_id_tmp
-        if(pscore[best_pscore_id]>best_score_threshold):
-            break
-        pscore[best_pscore_id_tmp] = 0.0
-        
-    target_pos = np.array([bboxes[0,0],bboxes[1,0]])
-    target_sz = np.array([bboxes[2,0], bboxes[3,0]])
+    target_pos = np.array([res_x, res_y])
+    target_sz = np.array([res_w, res_h])
+    
 
     # for Mask Branch
-    rboxes = []
-    deltas = []
+    
+    if mask_enable:
+        best_pscore_id_mask = np.unravel_index(best_pscore_id, (5, p.score_size, p.score_size))
+        delta_x, delta_y = best_pscore_id_mask[2], best_pscore_id_mask[1] # delta_x and delta_y are the selected coordinates in the volume
+        if refine_enable:
+            mask = net.track_refine((delta_y, delta_x)).to(device).sigmoid().squeeze().view(
+                p.out_size, p.out_size).cpu().data.numpy()
+        else:
+            mask = mask[0, :, delta_y, delta_x].sigmoid(). \
+                squeeze().view(p.out_size, p.out_size).cpu().data.numpy()
 
-    for idx in range(0,N):
-        if mask_enable:
-            best_pscore_id_mask = np.unravel_index(int(bboxes[5, idx]), (5, p.score_size, p.score_size))
-            delta_x, delta_y = best_pscore_id_mask[2], best_pscore_id_mask[1] # delta_x and delta_y are the selected coordinates in the volume
-            
-            if((delta_x, delta_y) not in deltas):
-                print("delta: (", delta_x, ", ", delta_y, ")")
-                deltas.append((delta_x,delta_y))
-                if refine_enable:
-                    mask = net.track_refine((delta_y, delta_x)).to(device).sigmoid().squeeze().view(
-                        p.out_size, p.out_size).cpu().data.numpy()
-                else:
-                    mask = mask[0, :, delta_y, delta_x].sigmoid(). \
-                        squeeze().view(p.out_size, p.out_size).cpu().data.numpy()
+        def crop_back(image, bbox, out_sz, padding=-1):
+            a = (out_sz[0] - 1) / bbox[2]
+            b = (out_sz[1] - 1) / bbox[3]
+            c = -a * bbox[0]
+            d = -b * bbox[1]
+            mapping = np.array([[a, 0, c],
+                                [0, b, d]]).astype(np.float)
+            crop = cv2.warpAffine(image, mapping, (out_sz[0], out_sz[1]),
+                                flags=cv2.INTER_LINEAR,
+                                borderMode=cv2.BORDER_CONSTANT,
+                                borderValue=padding)
+            return crop
+        
+        s = crop_box[2] / p.instance_size
+        sub_box = [crop_box[0] + (delta_x - p.base_size / 2) * p.total_stride * s,
+                crop_box[1] + (delta_y - p.base_size / 2) * p.total_stride * s,
+                s * p.exemplar_size, s * p.exemplar_size]
+        s = p.out_size / sub_box[2]
+        back_box = [-sub_box[0] * s, -sub_box[1] * s, state['im_w'] * s, state['im_h'] * s]
+        mask_in_img = crop_back(mask, back_box, (state['im_w'], state['im_h']))
 
-                def crop_back(image, bbox, out_sz, padding=-1):
-                    a = (out_sz[0] - 1) / bbox[2]
-                    b = (out_sz[1] - 1) / bbox[3]
-                    c = -a * bbox[0]
-                    d = -b * bbox[1]
-                    mapping = np.array([[a, 0, c],
-                                        [0, b, d]]).astype(np.float)
-                    crop = cv2.warpAffine(image, mapping, (out_sz[0], out_sz[1]),
-                                        flags=cv2.INTER_LINEAR,
-                                        borderMode=cv2.BORDER_CONSTANT,
-                                        borderValue=padding)
-                    return crop
-                
-                s = crop_box[2] / p.instance_size
-                sub_box = [crop_box[0] + (delta_x - p.base_size / 2) * p.total_stride * s,
-                        crop_box[1] + (delta_y - p.base_size / 2) * p.total_stride * s,
-                        s * p.exemplar_size, s * p.exemplar_size]
-                s = p.out_size / sub_box[2]
-                back_box = [-sub_box[0] * s, -sub_box[1] * s, state['im_w'] * s, state['im_h'] * s]
-                mask_in_img = crop_back(mask, back_box, (state['im_w'], state['im_h']))
-
-                target_mask = (mask_in_img > p.seg_thr).astype(np.uint8)
-                if cv2.__version__[-5] == '4':
-                    contours, _ = cv2.findContours(target_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-                else:
-                    _, contours, _ = cv2.findContours(target_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-                cnt_area = [cv2.contourArea(cnt) for cnt in contours]
-                if len(contours) != 0 and np.max(cnt_area) > 100:
-                    contour = contours[np.argmax(cnt_area)]  # use max area polygon
-                    polygon = contour.reshape(-1, 2)
-                    # pbox = cv2.boundingRect(polygon)  # Min Max Rectangle
-                    prbox = cv2.boxPoints(cv2.minAreaRect(polygon))  # Rotated Rectangle
-
-                    # box_in_img = pbox
-                    rbox_in_img = prbox
-                    box_score = bboxes[4, idx]
-                    rboxes.append( [rbox_in_img, box_score ])
-                    # if(len(deltas) == 1):
-                    #     attmap[delta_x, delta_y] = 3.5
-                    # else: 
-                    #     attmap[delta_x, delta_y] = 1.5
-
-                    if(debug):
-                        
-                        im_debug_overlay = im_debug.copy()
-                        im_debug_overlay[:,:,:] = np.array([0.0, 0.0, 0.0])
-                        torch_data = np.float64(im_debug_overlay[:,:,0].copy())
-                        patch_size = crop_box_int[0]
-                        num_deltas = 25 # aixo no varia
-                        patch_ratio = int(patch_size/num_deltas) # aixo varia
-                        resized_img_h, resized_img_w = im_debug.shape[0]/5, im_debug.shape[1]/5
-
-                        torch_data_delta_size = np.zeros( ( int(resized_img_h), int(resized_img_w) ) )
-                        offset_x_deltas = int(crop_box_int[0]/5)
-                        offset_y_deltas = int(crop_box_int[1]/5)
-
-                        length_x = int((crop_box_int[2])/5)
-                        length_y = int((crop_box_int[3])/5)
-                        
-                        for i in range(25):
-                            for j in range(25):
-                                # step_x = crop_box_int[0] + i*length_x
-                                # step_y = crop_box_int[1] + j*length_y
-                                # im_debug_overlay[step_y: step_y + length_y, step_x: step_x+length_x, :] = np.array([0.0,0.0,0.0])
-                                # im_debug_overlay[step_y: step_y + length_y, step_x: step_x+length_x, :] = np.uint8(attmap[j,i] * np.array([0,165,255]))
-                                # torch_data[step_y: step_y + length_y, step_x: step_x+length_x] = attmap[j,i]*1.0
-                                # Now for the reshaped
-                                torch_data_delta_size[offset_y_deltas+j, offset_x_deltas+i] = attmap[j,i]*1.0
-                                if(pscore[best_pscore_id] > best_score_threshold):
-                                    torch_data_delta_size[offset_y_deltas+delta_y, offset_x_deltas+delta_x] = 3.0
-
-                        if(pscore[best_pscore_id] > best_score_threshold):
-                            sma = torch.nn.Softmax()
-                            torch_data_delta_size = sma( torch.from_numpy(np.exp(torch_data_delta_size)) ).numpy()
-
-                                # im_debug_overlay[step_x: step_x+length_x, step_y: step_y + length_y, :] = attmap[j,i]
-
-                                
-                        overlay_result = cv2.addWeighted(im_debug, 0.70, im_debug_overlay, 0.3, 0.0)
-                        cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', overlay_result)
-                        np.save('/data/Ponc/tracking/torch_data/resized/'+"{:05d}".format(arrendatario)+'.npy', torch_data_delta_size)
-                        
-                    np.save('/data/Ponc/tracking/results/mevasa/'+"{:05d}".format(arrendatario)+'.npy', attmap)
-                else:  # empty mask
-                    location = cxy_wh_2_rect(target_pos, target_sz)
-                    rbox_in_img = np.array([[location[0], location[1]],
-                                            [location[0] + location[2], location[1]],
-                                            [location[0] + location[2], location[1] + location[3]],
-                                            [location[0], location[1] + location[3]]])
-        if(pscore[best_pscore_id]>best_score_threshold):
-            break
+        target_mask = (mask_in_img > p.seg_thr).astype(np.uint8)
+        if cv2.__version__[-5] == '4':
+            contours, _ = cv2.findContours(target_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        else:
+            _, contours, _ = cv2.findContours(target_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        cnt_area = [cv2.contourArea(cnt) for cnt in contours]
+        if len(contours) != 0 and np.max(cnt_area) > 100:
+            contour = contours[np.argmax(cnt_area)]  # use max area polygon
+            polygon = contour.reshape(-1, 2)
+            # pbox = cv2.boundingRect(polygon)  # Min Max Rectangle
+            prbox = cv2.boxPoints(cv2.minAreaRect(polygon))  # Rotated Rectangle
+            rbox_in_img = prbox 
+        else:  # empty mask
+            location = cxy_wh_2_rect(target_pos, target_sz)
+            rbox_in_img = np.array([[location[0], location[1]],
+                                    [location[0] + location[2], location[1]],
+                                    [location[0] + location[2], location[1] + location[3]],
+                                    [location[0], location[1] + location[3]]])
+    
     
     target_pos[0] = max(0, min(state['im_w'], target_pos[0]))
     target_pos[1] = max(0, min(state['im_h'], target_pos[1]))
@@ -417,12 +340,10 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     target_sz[1] = max(10, min(state['im_h'], target_sz[1]))
     state['target_pos'] = target_pos
     state['target_sz'] = target_sz
-    new_score = bboxes[4,0]
-    # state['score'] = score[best_pscore_id]
-    state['score'] = new_score
+    state['score'] = score[best_pscore_id]
     state['mask'] = mask_in_img if mask_enable else []
     state['ploygon'] = rbox_in_img if mask_enable else []
-    return state, bboxes, rboxes
+    return state
 
 
 

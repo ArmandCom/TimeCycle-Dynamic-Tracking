@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 import glob
 import pickle 
-from tools.test import *
+from tools.test_raw import *
 from utils.bbox_helper import get_axis_aligned_bbox, cxy_wh_2_rect
 from shapely.geometry import Polygon
 from shapely.geometry import asPolygon
@@ -111,7 +111,8 @@ if __name__ == '__main__':
     siammask.eval().to(device)
     
     # Parse Image file
-    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[772:805]
+    # img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[772:805] # NHL
+    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[32:88] # NFL
     
     ims = [cv2.imread(imf) for imf in img_files]
     
@@ -122,16 +123,16 @@ if __name__ == '__main__':
         # init_rect = (536,105, 41, 40) # juggling-easy
         init_rect = (437, 306, 115,50) # Eagles
         init_rect = (737, 374, 100, 156) # NHL
+        init_rect = (1027, 259, 57, 100) # NFL
         x, y, w, h = init_rect
 
     except:
         exit()
 
     toc = 0
-    trajs = np.zeros((len(ims),2))
     print("num images ",len(ims))
-    ssa= True
-    all_bboxes = []
+
+
     for f, im in enumerate(ims):
         tic = cv2.getTickCount()
         frame_boxes = []
@@ -140,29 +141,9 @@ if __name__ == '__main__':
             target_sz = np.array([w, h])
             state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)  # init tracker
         elif f > 0:  # tracking
-            state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)
-            state, bboxes, rboxes = siamese_track(state, im, mask_enable=True, refine_enable=True, device=device)  # track
+            # state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)
+            state = siamese_track(state, im, mask_enable=True, refine_enable=True, device=device)  # track
             
-            print("---- FRAME ",f," -------")
-            print("num_bxs = ", len(rboxes))
-            rboxes = filter_bboxes(rboxes,1, c=10*len(rboxes)) #puto recursiu, funciona be
-            print("num_filtered = ", len(rboxes), " - ", rboxes[0][1])
-            
-            # dibuixar nomes la bbox filtrada si esta fora de la bona (state)
-            locaux_bona = np.int0(state['ploygon'].flatten()).reshape((-1,2))
-            locaux_filt = rboxes[0][0]
-            pol_a = asPolygon(locaux_bona)
-            pol_b = asPolygon(locaux_filt)
-            intersection_area = pol_a.intersection(pol_b)
-            if((intersection_area.area/(pol_a.area + pol_b.area)) <= 0.2):
-                for i in range(len(rboxes)):
-                    location = rboxes[i][0].flatten()
-                    location = np.int0(location).reshape((-1, 1, 2))
-                    cv2.polylines(im, [location], True, (255, 255, 0), 1)
-                    traj = np.average(location, axis=0)[0]
-                    frame_boxes.append([traj])
-                    cv2.circle(im, (int(traj[0]), int(traj[1])) , 3, (255,255,0), 2)
-               
             location = state['ploygon'].flatten()
             mask = state['mask'] > state['p'].seg_thr
             im[:, :, 2] = (mask > 0) * 255 + (mask == 0) * im[:, :, 2]
@@ -175,12 +156,10 @@ if __name__ == '__main__':
             
             cv2.polylines(im, [np.int0(location).reshape((-1, 1, 2))], True, (0, 255, 0), 3)
             cv2.putText(im,str(state['score']),(50,50),cv2.FONT_HERSHEY_COMPLEX,1.0,(0,255,0))
-            cv2.imwrite('/data/Ponc/tracking/results/nhl-debug-train/'+str(f)+'.jpeg', im)
-            all_bboxes.append(frame_boxes)
+            cv2.imwrite('/data/Ponc/tracking/results/crossing_football_superbowl_2020/'+str(f)+'.jpeg', im)
+
         toc += cv2.getTickCount() - tic
-    
-    # with open('/data/Ponc/tracking/centroids_tree_nhl.obj','wb') as fil:
-    #     pickle.dump(all_bboxes, fil)
+
     
     toc /= cv2.getTickFrequency()
     fps = f / toc
