@@ -2,6 +2,31 @@ import torch
 import numpy as np
 import pickle as pkl
 
+class TrackerDynBoxes:
+    def __init__(self, T = 7, K = 3):
+        """ 
+        [0, 1, ... , T-1, T, T+1, ..., T+(K-1)]
+         <------- T -------> <------- K ----->
+        """
+        self.T = T
+        self.K = K
+        self.points_buffer
+        self.tree_buffer
+        self.current_K = 0
+        self.current_T = 0
+    
+    def accumulate(self, *candidates):
+        
+        if(self.current_T < self.T):
+            # Tracker needs more points to compute a reliable JBLD
+            if(len(candidates) == 1):
+                # Tracker is confident
+                self.points_buffer[self.current_T] = candidates
+                self.current_T += 1
+            elif(len(candidates) > 1):
+                # tracker 
+                build_tree(candidates)
+    
 
 def Hankel(s0, stitch=False, s1=0):
     """
@@ -51,6 +76,14 @@ def compare_dynamics(data_root, data):
     return dist
 
 
+def predict_Hankel(H):
+    rows = H.size()[0]
+    u, s , v = torch.svd(H)
+    r = V[:,-1]
+    print("r ", r)
+    print(H)    
+    
+
 dtype = torch.float
 device = torch.device('cpu')
 # device = torch.device('cuda:0')
@@ -69,7 +102,7 @@ data_root = torch.randn(BS, L0, dim,  device=device, dtype=dtype)  # size: (BS, 
 data = torch.randn(BS, L, dim, device=device, dtype=dtype)  # size: (BS, L, dim)
 
 # Tracker data
-with open('/Users/marinaalonsopoal/PycharmProjects/Marina/centroids_tree_nhl.obj', 'rb') as f:
+with open('/data/Ponc/tracking/centroids_tree_nhl.obj', 'rb') as f:
     data = pkl.load(f)
 
 s = torch.zeros((len(data), 2))  # Sequence of final points
@@ -117,3 +150,4 @@ for t, points in enumerate(data):
         dista = JBLD(Gram1, Gram2)
         print('JBLD', dista)
         # 1. L'afegeixo a s
+        print(predict_Hankel(H0x))
