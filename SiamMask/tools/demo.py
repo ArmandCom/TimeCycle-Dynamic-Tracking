@@ -147,7 +147,10 @@ if __name__ == '__main__':
             print("num_bxs = ", len(rboxes))
             rboxes = filter_bboxes(rboxes,1, c=10*len(rboxes)) #puto recursiu, funciona be
             print("num_filtered = ", len(rboxes), " - ", rboxes[0][1])
-            
+
+            # TODO: tracking
+            #(x,y) = tracker.decide(points) on points es una llista de candidats
+
             # dibuixar nomes la bbox filtrada si esta fora de la bona (state)
             locaux_bona = np.int0(state['ploygon'].flatten()).reshape((-1,2))
             locaux_filt = rboxes[0][0]

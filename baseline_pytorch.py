@@ -1,32 +1,79 @@
 import torch
 import numpy as np
 import pickle as pkl
+from functools import reduce
+from operator import mul
 
 class TrackerDynBoxes:
-    def __init__(self, T = 7, K = 3):
-        """ 
-        [0, 1, ... , T-1, T, T+1, ..., T+(K-1)]
-         <------- T -------> <------- K ----->
-        """
+    def __init__(self, T0 = 5, T = 2):
+
+        self.T0 = T0
         self.T = T
-        self.K = K
-        self.points_buffer
-        self.tree_buffer
-        self.current_K = 0
-        self.current_T = 0
+
+        self.buffer_past_x = np.zeros((T0, 1))
+        self.buffer_past_y = np.zeros((T0, 1))
+        self.buffer_future_x = []
+        self.buffer_future_y = []
+
+        self.current_T0 = 0 # Init only
+        self.current_T = 0 # Init only
+
+        self.past_JBLDs = []
     
-    def accumulate(self, *candidates):
-        
-        if(self.current_T < self.T):
+    
+    def decide(self, *candidates):
+        if( self.current_T0 < self.T0 ):
             # Tracker needs more points to compute a reliable JBLD
-            if(len(candidates) == 1):
-                # Tracker is confident
-                self.points_buffer[self.current_T] = candidates
-                self.current_T += 1
-            elif(len(candidates) > 1):
-                # tracker 
-                build_tree(candidates)
+            if(len(candidates) == 1): # We assume there is only 1 candidate for the T0 frames
+                self.buffer_past_x[self.current_T0, 0] candidates[0]
+                self.buffer_past_y[self.current_T0, 0] = candidates[1]
+                self.current_T0 += 1
+        else:
+            # Append points to buffers
+            ryan_list_x = [] # temp lists
+            ryan_list_y = []
+            for (x,y) in candidates:
+                ryan_list_x.append(x)
+                ryan_list_y.append(y)
+            
+            self.buffer_future_x.append(ryan_list_x)
+            self.buffer_future_y.append(ryan_list_y)
+
+            if( len(self.buffer_future_x) == self.T ):
+                # We have enough number of points to take a decision, let us build the trees
+                seqs_lengths = []
+                [seqs_lengths.append(len(y)) for y in x]
+                num_of_seqs = reduce(mul, seqs_lengths)
+                JBLDS = []
+                for i in range(num_of_seqs)):
+                    # Build each sequence of tree
+                    
+                    
+                    # Compute JBLD for each 
+
+                
+                # Choose the minimum
+
+                # Classify candidate
+                
+                # if not a suitable candidate
+                    # Predict
+                
+                # update buffers
+
+
+    def generate_seq_from_tree(tree, idx):
+        return sequence
+    def classify(cand):
+        # do sth with self.past_JBLDs
+        return si_o_no
+
     
+                
+
+            
+
+
 
 def Hankel(s0, stitch=False, s1=0):
     """
@@ -49,7 +96,7 @@ def Hankel(s0, stitch=False, s1=0):
         num_cols = int(np.ceil(l0 / 2)) + l1
     H = torch.zeros([num_rows, num_cols])
     for i in range(int(num_rows/dim)):
-        H[dim * i, :] = (s0[i:i + num_cols]).t()
+        H[dim * i, :] = (s0[i:i + num_cols]).view(1, num_cols)
     return H
 
 
@@ -77,12 +124,17 @@ def compare_dynamics(data_root, data):
 
 
 def predict_Hankel(H):
-    rows = H.size()[0]
-    u, s , v = torch.svd(H)
+    rows, cols = H.size()
+    U, S, V = torch.svd(H)
     r = V[:,-1]
-    print("r ", r)
-    print(H)    
-    
+    print("H size = ", H.size())
+    print("r size = ", r.size())
+    last_column_of_H = H[-1,:]
+    last_column_of_H = last_column_of_H[1:]
+    print("Last column of H size = ", last_column_of_H.size())    
+    print(H)
+    first_term = torch.matmul(last_column_of_H, r[:-1])/(-r[-1])
+    print("PREDICTION = ", first_term)
 
 dtype = torch.float
 device = torch.device('cpu')
@@ -92,8 +144,8 @@ device = torch.device('cpu')
 T0 = 5  # Temporal length of the initial window
 eps = 0.0001  # Gram Matrix noise
 BS = 100  # Batch Size
-L0 = 6  # Longitude of the Root Sequence
-L = 2  # Longitude of the Sequence being Tested
+L0 = 5  # Longitude of the Root Sequence
+L = 1  # Longitude of the Sequence being Tested
 dim = 2  # Number of channels (x,y)
 eps = 0.01  # Noise epsilon
 
@@ -139,7 +191,7 @@ for t, points in enumerate(data):
     else:
         s[t, :] = torch.FloatTensor(points)
         p = torch.Tensor(points).squeeze(0)
-        p = torch.Tensor([[300.0,500.0]])
+        
         print('point', p)
         H0x = Hankel(s[0:t, 0])
         H1x = Hankel(s[0:t, 0], True, p[0, 0].unsqueeze(0))
