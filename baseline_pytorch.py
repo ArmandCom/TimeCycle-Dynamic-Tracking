@@ -3,29 +3,42 @@ import numpy as np
 import pickle as pkl
 from functools import reduce
 from operator import mul
+import matplotlib.pyplot as plt
 
 
 class TrackerDynBoxes:
-    def __init__(self, T0 = 5, T = 2):
+    """ Generates a candidate sequence given an index
+    Attributes:
+        - T0: size of the past window
+        - T: size of the future window
+        - buffer_past_x:
+        - buffer_past_y:
+        - buffer_future_x:
+        - buffer_future_y:
+        - current_T0:
+        - current_T:
+        - past_JBLDs:
+    """
 
+    def __init__(self, T0=7, T=2):
+        """ Inits TrackerDynBoxes"""
         self.T0 = T0
         self.T = T
-
         self.buffer_past_x = torch.zeros((T0, 1))
         self.buffer_past_y = torch.zeros((T0, 1))
         self.buffer_future_x = []
         self.buffer_future_y = []
-
-        self.current_T0 = 0 # Init only
-        self.current_T = 0 # Init only
-
+        self.current_T0 = 0
+        self.current_T = 0
         self.past_JBLDs = []
-    
-
 
     def generate_seq_from_tree(self, seq_lengths, idx):
-        """
-        :return matrix T,2 = (T, (x,y))
+        """ Generates a candidate sequence given an index
+        Args:
+            - seq_lengths: list containing the number of candidates per frame (T)
+            - idx: index of the desired sequence (1)
+        Returns:
+            - sequence: sequence corresponding to the provided index (1, T, (x,y))
         """
         sequence = np.zeros((1, len(seq_lengths), 2))
         new_idx = np.unravel_index(idx, seq_lengths)
@@ -35,18 +48,29 @@ class TrackerDynBoxes:
         sequence = torch.from_numpy(sequence)
         return sequence
 
-    def classify(self, cand, thresh = 0.5):
-        si_o_no = -1
-        if(len(self.past_JBLDs) == 0):
-            si_o_no = 1
-            return si_o_no
+    def classify(self, cand, thresh = 2e-8):
+        """ Generates a candidate sequence given an index
+        Args:
+            - cand:
+            - thresh:
+        Returns:
+            - belongs:
+        """
+        belongs = -1
+        if len(self.past_JBLDs) == 0:
+            belongs = 1
+            return belongs
         else:
             mitjana = sum(self.past_JBLDs)/len(self.past_JBLDs)
-        if( abs(cand-mitjana) <= thresh):
-            si_o_no = 1
-        return si_o_no
+        if abs(cand-mitjana) <= thresh:
+            belongs = 1
+        return belongs
 
     def update_buffers(self, new_result):
+        """ Generates a candidate sequence given an index
+        Args:
+            - new_result:
+        """
         self.buffer_past_x[0:-1, 0] = self.buffer_past_x[1:,0]
         self.buffer_past_y[0:-1, 0] = self.buffer_past_y[1:,0]
         self.buffer_past_x[-1, 0] = new_result[0]
@@ -55,6 +79,10 @@ class TrackerDynBoxes:
         del self.buffer_future_y[0]
     
     def decide(self, *candidates):
+        """ Generates a candidate sequence given an index
+        Args:
+            - candidates: list containing the number of candidates per frame (T)
+        """
         candidates = candidates[0]
         """
         candidates contains N sublists [ [ [(px11,py11)] ] , [ [(px12,py12)],[(px22,py22)] ] ]
@@ -62,26 +90,27 @@ class TrackerDynBoxes:
         candidates[1][0] = [(px12,py12)]
 
         """
-        
-        if( self.current_T0 < self.T0 ):
-            # Tracker needs more points to compute a reliable JBLD
-            # We assume there is only 1 candidate for the T0 frames #NOTE: Corregir
+        point_to_add = None
+        if self.current_T0 < self.T0:
+            # Tracker needs the first T0 points to compute a reliable JBLD
             self.buffer_past_x[self.current_T0, 0] = float(candidates[0][0][0])
             self.buffer_past_y[self.current_T0, 0] = float(candidates[0][0][1])
             self.current_T0 += 1
+            point_to_add = torch.tensor([float(candidates[0][0][0]), float(candidates[0][0][1])])
+            if len(candidates) > 1:
+                raise ValueError('There is more than one candidate in the first T0 frames')
         else:
             # Append points to buffers
-            ryan_list_x = [] # temp lists
-            ryan_list_y = []
-            for [(x,y)] in candidates:
-                ryan_list_x.append(x)
-                ryan_list_y.append(y)
-            
-            self.buffer_future_x.append(ryan_list_x)
-            self.buffer_future_y.append(ryan_list_y)
+            temp_list_x = []
+            temp_list_y = []
+            for [(x, y)] in candidates:
+                temp_list_x.append(x)
+                temp_list_y.append(y)
+            self.buffer_future_x.append(temp_list_x)
+            self.buffer_future_y.append(temp_list_y)
 
-            if( len(self.buffer_future_x) == self.T ):
-                # We have enough number of points to take a decision, let us build the trees
+            if len(self.buffer_future_x) == self.T:
+                # Buffers are now full
                 seqs_lengths = []
                 [seqs_lengths.append(len(y)) for y in self.buffer_future_x]
                 num_of_seqs = reduce(mul, seqs_lengths)
@@ -101,8 +130,8 @@ class TrackerDynBoxes:
                 point_to_add = point_to_add[0, 0, :]
 
                 # Classify candidate
-                classification_outcome = self.classify(min_val_jbld) # -1 dolent, 1 bo
-                if(classification_outcome == -1):
+                classification_outcome = self.classify(min_val_jbld)  # -1 bad, 1 good
+                if classification_outcome == -1:
                     # Predict
                     Hx = Hankel(self.buffer_past_x)
                     Hy = Hankel(self.buffer_past_y)
@@ -115,14 +144,19 @@ class TrackerDynBoxes:
                     self.past_JBLDs.append(min_val_jbld)
                 # update buffers
                 self.update_buffers(point_to_add)
+            else:
+                point_to_add = torch.tensor([float(candidates[0][0][0]), float(candidates[0][0][1])])
+        return point_to_add
 
 
 def Hankel(s0, stitch=False, s1=0):
-    """
-    :param s0: Root sequence
-    :param stitch: Boolean to indicate if Hankel must be stitched or not
-    :param s1: Sequence to add if Hankel must be stitched
-    :return: H: Hankel matrix
+    """ Generates a candidate sequence given an index
+    Args:
+        - s0: Root sequence
+        - switch: Boolean to indicate if Hankel must be stitched or not
+        - s1: Sequence to add if Hankel must be stitched
+    Returns:
+        - H: Hankel matrix
     """
     dim = 1  # if x and y want to be treated jointly, change to dim=2
     l0 = s0.shape[0]
@@ -142,35 +176,60 @@ def Hankel(s0, stitch=False, s1=0):
     return H
 
 
-def JBLD(X, Y):
-    d = torch.log(torch.det((X + Y)/2)) - 0.5*torch.log(torch.det(torch.matmul(X, Y)))
-    return d
-
-def JBLD2(X, Y):
-    d = (torch.det((X + Y)/2)) - 0.5*(torch.det(torch.matmul(X, Y)))
-    return d
-
-
 def Gram(H, eps):
+    """ Generates a candidate sequence given an index
+    Args:
+        - seq_lengths: list containing the number of candidates per frame (T)
+        - idx: index of the desired sequence (1)
+    Returns:
+        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+    """
     N = np.power(eps, 2) * H.shape[0] * torch.eye(H.shape[0])
     G = torch.matmul(H, H.t()) + N
     Gnorm = G/torch.norm(G, 'fro')
     return Gnorm
 
 
+def JBLD(X, Y, det):
+    """ Generates a candidate sequence given an index
+    Args:
+        - seq_lengths: list containing the number of candidates per frame (T)
+        - idx: index of the desired sequence (1)
+    Returns:
+        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+    """
+    d = torch.log(torch.det((X + Y)/2)) - 0.5*torch.log(torch.det(torch.matmul(X, Y)))
+    if not det:
+        d = (torch.det((X + Y) / 2)) - 0.5 * (torch.det(torch.matmul(X, Y)))
+    return d
+
+
 def compare_dynamics(data_root, data, BS=1):
+    """ Generates a candidate sequence given an index
+    Args:
+        - seq_lengths: list containing the number of candidates per frame (T)
+        - idx: index of the desired sequence (1)
+    Returns:
+        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+    """
     dist = torch.zeros(BS, 2, device=device)
     for n_batch in range(BS):
         for d in range(2):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
-            dist[n_batch, d] = JBLD2(Gram(H0, eps), Gram(H1, eps))
-    print(dist)
+            dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), False)
     dist = torch.mean(dist, 1)
     return dist
 
 
 def predict_Hankel(H):
+    """ Generates a candidate sequence given an index
+    Args:
+        - seq_lengths: list containing the number of candidates per frame (T)
+        - idx: index of the desired sequence (1)
+    Returns:
+        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+    """
     rows, cols = H.size()
     U, S, V = torch.svd(H)
     r = V[:,-1]
@@ -179,80 +238,30 @@ def predict_Hankel(H):
     first_term = torch.matmul(last_column_of_H, r[:-1])/(-r[-1])
     return first_term
 
-dtype = torch.float
+
 device = torch.device('cpu')
 # device = torch.device('cuda:0')
 
 # Parameters
-T0 = 5  # Temporal length of the initial window
 eps = 0.0001  # Gram Matrix noise
-BS = 100  # Batch Size
-L0 = 5  # Longitude of the Root Sequence
-L = 1  # Longitude of the Sequence being Tested
-dim = 2  # Number of channels (x,y)
-eps = 0.01  # Noise epsilon
-
-# Create Random Data
-data_root = torch.randn(BS, L0, dim,  device=device, dtype=dtype)  # size: (BS, L0, dim)
-data = torch.randn(BS, L, dim, device=device, dtype=dtype)  # size: (BS, L, dim)
+directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
+# directory = '/data/Ponc/tracking/centroids_tree_nhl.obj'
 
 # Tracker data
-with open('/data/Ponc/tracking/centroids_tree_nhl.obj', 'rb') as f:
+with open(directory, 'rb') as f:
     data = pkl.load(f)
 
-s = torch.zeros((len(data), 2))  # Sequence of final points
-changes = torch.zeros(len(data))  # Flag that will indicate where changes have occurred
-jbld = torch.zeros(len(data))  # JBLD distances for each added point
-
-
-tracker = TrackerDynBoxes()
-# data[0] = [data[0][0],data[0][0]]
-# print(data)
-# print(len(data[19]))
+tracker = TrackerDynBoxes(T0=7, T=3)
+points_tracked_npy = np.zeros((len(data), 2))
 for t, points in enumerate(data):
-    tracker.decide(points)
+    points_tracked = tracker.decide(points)
+    points_tracked_npy[t, :] = np.asarray(points_tracked)
+print(points_tracked_npy)
 
-
-
-
-# for t, points in enumerate(data):
-#     print('\nTIME:', t)
-#     if t < T0:
-#         s[t, :] = torch.FloatTensor(points)
-
-#     # if there is more than one candidate
-#     elif len(points) > 1:
-#         dist = torch.zeros((len(points), 2))
-#         H0x = Hankel(s[0:t, 0])
-#         H0y = Hankel(s[0:t, 1])
-#         for i in range(len(points)):
-#             p = torch.Tensor(points[i])
-#             print('point:', p)
-#             Hix = Hankel(s[0:t, 0], True, p[0, 0].unsqueeze(0))
-#             Hiy = Hankel(s[0:t, 1], True, p[0, 1].unsqueeze(0))
-#             Gram1 = Gram(H0x, eps)
-#             Gram2 = Gram(Hix, eps)
-#             dist[i, 0] = JBLD(Gram(H0x, eps), Gram(Hix, eps))
-#             dist[i, 1] = JBLD(Gram(H0y, eps), Gram(Hiy, eps))
-#         print('distancia', dist)
-
-#         # 1. Creo candidats
-#         # 2. Computo JBLDs
-#         # 3. Actualitzo s, changes i jbld
-
-#     # if there is only one candidate
-#     else:
-#         s[t, :] = torch.FloatTensor(points)
-#         p = torch.Tensor(points).squeeze(0)
-        
-#         print('point', p)
-#         H0x = Hankel(s[0:t, 0])
-#         H1x = Hankel(s[0:t, 0], True, p[0, 0].unsqueeze(0))
-
-#         Gram1 = Gram(H0x, eps)
-#         Gram2 = Gram(H1x, eps)
-#         print("det|X+Y| = ", torch.det(Gram1+Gram2), " det|XY| = ", torch.det(torch.matmul(Gram1, Gram2)))
-#         dista = JBLD(Gram1, Gram2)
-#         print('JBLD', dista)
-#         # 1. L'afegeixo a s
-#         print(predict_Hankel(H0x))
+t = np.arange(len(data))
+plt.scatter(t, points_tracked_npy[:, 0], s=75, c='r', zorder=1, label='x component', alpha=0.5)
+plt.scatter(t, points_tracked_npy[:, 1], s=75, c='b', zorder=1, label='y component', alpha=0.5)
+plt.legend(loc="center left")
+plt.title('Trajectory Evolution just predicting one time step')
+plt.xlabel('Time [s]')
+plt.show()
