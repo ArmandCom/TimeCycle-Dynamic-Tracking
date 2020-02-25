@@ -244,8 +244,7 @@ device = torch.device('cpu')
 
 # Parameters
 eps = 0.0001  # Gram Matrix noise
-directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
-# directory = '/data/Ponc/tracking/centroids_tree_nhl.obj'
+directory = '/data/Ponc/tracking/centroids_tree_nhl.obj'
 
 # Tracker data
 with open(directory, 'rb') as f:
