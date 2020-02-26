@@ -2,6 +2,8 @@
 # SiamMask
 # Licensed under The MIT License
 # Written by Qiang Wang (wangqiang2015 at ia.ac.cn)
+
+# python ../../tools/demo.py --resume SiamMask_DAVIS.pth --config config_davis.json --base_path /data/Ponc/tracking/JPEGImages/480p/nhl/
 # --------------------------------------------------------
 import glob
 import pickle 
@@ -111,7 +113,7 @@ if __name__ == '__main__':
     siammask.eval().to(device)
     
     # Parse Image file
-    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[772:805]
+    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[32:88]
     
     ims = [cv2.imread(imf) for imf in img_files]
     
@@ -122,6 +124,8 @@ if __name__ == '__main__':
         # init_rect = (536,105, 41, 40) # juggling-easy
         init_rect = (437, 306, 115,50) # Eagles
         init_rect = (737, 374, 100, 156) # NHL
+        init_rect = (1027, 259, 57, 100) # NFL
+
         x, y, w, h = init_rect
 
     except:
@@ -140,7 +144,7 @@ if __name__ == '__main__':
             target_sz = np.array([w, h])
             state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)  # init tracker
         elif f > 0:  # tracking
-            state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)
+            # state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)
             state, bboxes, rboxes = siamese_track(state, im, mask_enable=True, refine_enable=True, device=device)  # track
             
             print("---- FRAME ",f," -------")
@@ -178,12 +182,12 @@ if __name__ == '__main__':
             
             cv2.polylines(im, [np.int0(location).reshape((-1, 1, 2))], True, (0, 255, 0), 3)
             cv2.putText(im,str(state['score']),(50,50),cv2.FONT_HERSHEY_COMPLEX,1.0,(0,255,0))
-            cv2.imwrite('/data/Ponc/tracking/results/nhl-debug-train/'+str(f)+'.jpeg', im)
+            cv2.imwrite('/data/Ponc/tracking/results/crossing_football_superbowl_2020_debug/'+str(f)+'.jpeg', im)
             all_bboxes.append(frame_boxes)
         toc += cv2.getTickCount() - tic
     
-    # with open('/data/Ponc/tracking/centroids_tree_nhl.obj','wb') as fil:
-    #     pickle.dump(all_bboxes, fil)
+    with open('/data/Ponc/tracking/centroids_tree_nfl.obj','wb') as fil:
+        pickle.dump(all_bboxes, fil)
     
     toc /= cv2.getTickFrequency()
     fps = f / toc
