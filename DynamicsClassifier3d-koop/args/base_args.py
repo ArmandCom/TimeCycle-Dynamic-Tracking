@@ -24,17 +24,23 @@ class BaseArgs:
 
     # dimensions
     self.parser.add_argument('--k', type=int, nargs='+', default=6)
-    self.parser.add_argument('--feat_latent_size', type=int, default=128,
-                             help='Size of convolutional features')
-    self.parser.add_argument('--image_size', type=int, nargs='+', default=[64, 64])
+    # self.parser.add_argument('--image_size', type=int, nargs='+', default=[64, 64])
 
-    self.parser.add_argument('--time_enc_size', type=int, default=4,
+    # dimensions
+    self.parser.add_argument('--feat_latent_size', type=int, default=64,
+                             help='Size of convolutional features')
+    self.parser.add_argument('--time_enc_size', type=int, default=32,
                              help='Size of temporal encoding')
-    self.parser.add_argument('--manifold_size', type=int, default=3,
-                             help='Dimension of the manifold for the given time sequence')
+    self.parser.add_argument('--t_enc_rnn_hidden_size', type=int, default=32,
+                             help='Size of the hidden size of the time enc rnn')
+    self.parser.add_argument('--trans_rnn_hidden_size', type=int, default=32,
+                             help='Size of the output size of the transition rnn')
+    self.parser.add_argument('--manifold_size', type=int, default=1,
+                             help='Dimension of the manifold for the given time sequence')#64
 
     # Changing hyperparameters
     self.parser.add_argument('--traj_length', type=int, default=12)
+    self.parser.add_argument('--ini_length', type=int, default=3)
 
     # self.parser.add_argument('--weight_dim', type=float, default=0.001,
     #                          help='Weight of the manifold dimension loss - alpha')

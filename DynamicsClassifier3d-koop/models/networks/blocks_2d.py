@@ -221,7 +221,7 @@ class UpsampleBlock(BaseBlock):
         )
 
 
-class DownsampleBlock(BaseBlock):
+class DownsampleBlock_AR(BaseBlock):
     """ Implements a Downsampling block for images (Fig. 1ii). """
     def __init__(self, channel_in, channel_out, traj_length, activation_fn, use_bn=True, use_bias=False):
         # type: (int, int, int, Module, bool, bool) -> None
@@ -234,7 +234,7 @@ class DownsampleBlock(BaseBlock):
         :param use_bn: whether or not to use batch-norm.
         :param use_bias: whether or not to use bias.
         """
-        super(DownsampleBlock, self).__init__(channel_in, channel_out, traj_length, activation_fn, use_bn, use_bias)
+        super(DownsampleBlock_AR, self).__init__(channel_in, channel_out, traj_length, activation_fn, use_bn, use_bias)
         self._T = traj_length
 
         # Convolutions
@@ -275,7 +275,7 @@ class DownsampleBlock(BaseBlock):
             activation_fn=self._activation_fn
         )
 
-class DownsampleBlock_nonAR(BaseBlock):
+class DownsampleBlock(BaseBlock):
     """ Implements a Downsampling block for images (Fig. 1ii). """
     def __init__(self, channel_in, channel_out, traj_length, activation_fn, use_bn=True, use_bias=False):
         # type: (int, int, int, Module, bool, bool) -> None
@@ -288,7 +288,7 @@ class DownsampleBlock_nonAR(BaseBlock):
         :param use_bn: whether or not to use batch-norm.
         :param use_bias: whether or not to use bias.
         """
-        super(DownsampleBlock_nonAR, self).__init__(channel_in, channel_out, traj_length, activation_fn, use_bn, use_bias)
+        super(DownsampleBlock, self).__init__(channel_in, channel_out, traj_length, activation_fn, use_bn, use_bias)
         self._T = traj_length
 
         # Convolutions

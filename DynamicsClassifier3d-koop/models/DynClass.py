@@ -5,7 +5,9 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 from .base_model import BaseModel
-from models.networks.selection_AR_encoder_w_inicond import TemporalEncoder
+# from models.networks.selection_AR_encoder_w_inicond import TemporalEncoder
+# from models.networks.mapping import Encoder as TemporalEncoder
+from models.networks.mapping_ini_cond import Encoder as TemporalEncoder
 
 from utils.hankel import gram_matrix, JBLDLoss_rolling
 from utils.utils import closest_sequence, distance_closest_sequence, weighted_distance_closest_sequence
@@ -26,7 +28,8 @@ class DynClass(BaseModel):
     super(DynClass, self).__init__()
 
     self.delta = 1e-5
-    self.weight_1nn = 1
+    self.weight_1nn = 15
+    # self.weight_1nn = 5
 
     self.shape = 32
     self.is_train = opt.is_train
@@ -40,9 +43,14 @@ class DynClass(BaseModel):
     self.batch_size = opt.batch_size
 
     # Dimensions
-    # self.feat_latent_size = opt.feat_latent_size
-    # self.time_enc_size = opt.time_enc_size
-    # self.manifold_size = opt.manifold_size
+    self.feat_latent_size = opt.feat_latent_size
+    self.time_enc_size = opt.time_enc_size
+    self.t_enc_rnn_hidden_size = opt.t_enc_rnn_hidden_size
+    self.trans_rnn_hidden_size = opt.trans_rnn_hidden_size
+
+    self.ini_length = opt.ini_length
+
+    self.manifold_size = 1
 
     # Training parameters
     if opt.is_train:
@@ -61,8 +69,10 @@ class DynClass(BaseModel):
     self.loss_dynamics = lambda S: torch.logdet(gram_matrix(S, diff=True, delta=self.delta)).mean() #Note: [...,:-1], diff = False
     # Note: Rolling window logdet
     # self.loss_dynamics, self.subtraj_length = lambda S: torch.logdet(gram_matrix(S, diff=False, delta=self.delta)), self.T-1
-    # Note: JBLD
-    self.loss_dynamics_jbld = lambda S: JBLDLoss_rolling(S, delta=self.delta, sz=5)
+    # Note: JBLD - TODO: change max to mean ?
+    # self.loss_dynamics_jbld = lambda S: JBLDLoss_rolling(S, delta=self.delta, sz=7).max()
+    self.loss_dynamics_jbld = lambda S: JBLDLoss_rolling(S, delta=self.delta, sz=7).mean()
+
 
     # Note: Mean distance to NNs
     # self.loss_1nn = lambda S, Sall: self.loss_mse(S, closest_sequence(S, Sall))
@@ -76,9 +86,15 @@ class DynClass(BaseModel):
     '''
     self.nets = {}
 
-    # Time encoding network 3 - also selector
-    # time_encoder_model = TemporalEncoder([1, self.shape, self.T])
-    time_encoder_model = TemporalEncoder([1, self.shape, self.T], 3)
+    # Time encoding network 4 - Koopman approach
+
+    time_encoder_model = TemporalEncoder(self.T, self.ini_length, n_channels=1,
+                                         image_size = [1, self.shape, self.T], # or reversed?
+                                         feat_latent_size=self.feat_latent_size,
+                                         time_enc_size=self.time_enc_size,
+                                         t_enc_rnn_hidden_size=self.t_enc_rnn_hidden_size,
+                                         trans_rnn_hidden_size=self.trans_rnn_hidden_size,
+                                         manifold_size=self.manifold_size)
     self.time_encoder_model = nn.DataParallel(time_encoder_model.cuda())
     self.nets['time_encoder_model'] = self.time_encoder_model
 
@@ -100,7 +116,7 @@ class DynClass(BaseModel):
     print('Parameters of time_encoder_model: ', self.time_encoder_model.parameters())
 
   def temporal_encoding(self, input):
-    o = self.time_encoder_model(*input)
+    o = self.time_encoder_model(input)
     return o
 
   # def classify(self, latent):
@@ -114,6 +130,7 @@ class DynClass(BaseModel):
     # seqs_mean = input[:,0:2].view(batch_size, 2, -1).mean(2).unsqueeze(-1).unsqueeze(-1)
     # input[:,0:2] -= seqs_mean
 
+    # TODO: mask forks - maybe in origin
     input_score, input_coord, input_reshaped = format_input(input, 0, self.shape, save_test=False)
 
     input = Variable(input_score.cuda(), requires_grad=True)
@@ -125,7 +142,7 @@ class DynClass(BaseModel):
 
     # Note: option 1: time encoding + selection different modules
     '''Encode'''
-    encoder_input = input, input_reshaped # Note: we add input reshaped only in second version of model
+    encoder_input = (input , input_reshaped) # Note: we add input reshaped only in second version of model
     soft_coord = self.temporal_encoding(encoder_input)
 
     # Give ground truth to the first point.
@@ -147,7 +164,7 @@ class DynClass(BaseModel):
     if step%25 == 1:
       selected = closest_sequence(soft_coord, input_reshaped)
       quick_represent(input_reshaped[0, 0], soft_coord.view(batch_size, -1)[0],
-                      name='example_result_soft_')
+                      name='example_result_soft')
       # quick_represent(input_reshaped[0, 0], selected[0, 0, 0], name='example_result_hard')
       print('\n-loss_1nn: ', loss_1nn, '\nloss_dynamics: ', loss_dynamics)
 
@@ -168,17 +185,17 @@ class DynClass(BaseModel):
     # Note: option 1: time encoding + selection different modules
     '''Encode'''
     input_score, input_coord, input_reshaped = format_input(input, 0, self.shape, save_test=False)
+
     input = Variable(input_score.cuda())
     input_reshaped = Variable(input_reshaped.cuda())
 
     batch_size, n_chan, n_dim, traj_length = input_reshaped.size()
-
     numel = batch_size * traj_length * n_dim
     res_dict = {}
 
     # Note: option 1: time encoding + selection different modules
     '''Encode'''
-    encoder_input = input, input_reshaped
+    encoder_input = (input , input_reshaped)
     soft_coord = self.temporal_encoding(encoder_input)
 
     # # Give ground truth to the first point.

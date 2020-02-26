@@ -140,7 +140,11 @@ def format_input(X, chan, shape, save_test = False):
     '''
     assert chan == 0 or chan == 1
 
-    axis_values = -X[:, chan]
+    # turn half of the
+    perm = torch.randperm(X.size(0))
+    idx = perm[:int((X.size(0)/2))]
+    axis_values = X[:, chan]
+    axis_values[idx] *= -1
     scores = X[:, -1]
 
     # TODO: check if it's fucking up all trajectories

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 # from models.base import BaseModule
-from models.networks.blocks_2d import DownsampleBlock
+from models.networks.blocks_2d import DownsampleBlock_nonAR
 from models.networks.blocks_2d import UpsampleBlock
 
 
@@ -76,7 +76,7 @@ class TemporalEncoder(nn.Module):
                           num_layers=1, batch_first=True, bidirectional=True).cuda()
         # .view(batch, seq_len, num_directions, hidden_size)
         self.fc1 = nn.Linear(in_features=reduce(mul, self.deepest_shape), out_features=self.hidden_features).cuda()
-        self.bn1 = nn.BatchNorm1d(num_features=self.hidden_features).cuda()
+        self.bn1 = nn.BatchNorm1d(num_features=self.hidden_features).cuda() #TODO: is this batchnorm ok?
         self.ac1 = activation_fn.cuda()
         self.fc2 = nn.Linear(in_features=self.hidden_features, out_features=1).cuda()
         self.ac2 = nn.ReLU().cuda() # nn.Sigmoid()
@@ -93,48 +93,22 @@ class TemporalEncoder(nn.Module):
         '''Conv network'''
         h = x
         h = self.conv(h)
-        h_us = self.upsample(h)
 
-        h_rev = (x+h_us).index_select(-1, self.idx_reverse)
-        h_rev = self.conv_reverse(h_rev)
-        h_rev = h_rev.index_select(-1, self.idx_reverse)
-
-        h       = h     .permute(0, 3, 1, 2).view(len(h), self.T, -1)
-        h_rev   = h_rev .permute(0, 3, 1, 2).view(len(h), self.T, -1)
-        h = torch.cat([h, h_rev], dim=-1)
-
-        '''GRU - Recurrent Network'''
-        # TODO: where in the pipeline?
-        h_gru_0 = torch.zeros((2, len(h),  int(h.shape[-1]//2))).cuda()
-        h, h_gru = self.gru(h, h_gru_0)
+        # h_us = self.upsample(h)
+        # h_rev = (x+h_us).index_select(-1, self.idx_reverse)
+        # h_rev = self.conv_reverse(h_rev)
+        # h_rev = h_rev.index_select(-1, self.idx_reverse)
+        #
+        # h       = h     .permute(0, 3, 1, 2).view(len(h), self.T, -1)
+        # h_rev   = h_rev .permute(0, 3, 1, 2).view(len(h), self.T, -1)
+        # h = torch.cat([h, h_rev], dim=-1)
+        #
+        # '''GRU - Recurrent Network'''
+        # h_gru_0 = torch.zeros((2, len(h),  int(h.shape[-1]//2))).cuda()
+        # h, h_gru = self.gru(h, h_gru_0)
 
         '''FC network'''
         h = self.fc1(h).permute(0, 2, 1)
-        h = self.ac1(self.bn1(h)).permute(0,2,1)
+        h = self.ac1(self.bn1(h)).permute(0,2,1) # TODO: also doubts with this batchnorm
         o = self.ac2(self.fc2(h)).permute(0,2,1).unsqueeze(1)
         return o
-
-    # def forward(self, x):
-    #     # types: (torch.Tensor) -> torch.Tensor
-    #     """
-    #     Forward propagation.
-    #
-    #     :param x: the input batch of images.
-    #     :return: the batch of latent vectors.
-    #     """
-    #     '''Conv network'''
-    #     h = x
-    #     h = self.conv(h)
-    #     h_rev = x.index_select(-1, self.idx_reverse)
-    #     h_rev = self.conv(h_rev)
-    #     h_rev = h_rev.index_select(-1, self.idx_reverse)
-    #
-    #     h       = h     .permute(0, 3, 1, 2).view(len(h), self.T, -1)
-    #     h_rev   = h_rev .permute(0, 3, 1, 2).view(len(h), self.T, -1)
-    #     h = torch.cat([h, h_rev], dim=-1)
-    #
-    #     '''FC network'''
-    #     h = self.fc1(h).permute(0, 2, 1)
-    #     h = self.ac1(self.bn1(h)).permute(0,2,1) #+ self.h/2
-    #     o = self.ac2(self.fc2(h)).permute(0,2,1).unsqueeze(1)
-    #     return o

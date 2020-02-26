@@ -222,7 +222,7 @@ def JBLDLoss_rolling(S, delta, sz=None):
     jblds = torch.cat(jblds)
 
 
-    return jblds.max()
+    return jblds
 
 def reweighted_loss(G_old, G, gpu_id=0):
 
