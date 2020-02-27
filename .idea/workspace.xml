@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="92d02dd0-c2ed-4f8a-a690-a0eec528715d" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/baseline/utils_dynamics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/baseline/utils_visualization.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/TimeCycle-Dynamic-Tracking.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TimeCycle-Dynamic-Tracking.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="92d02dd0-c2ed-4f8a-a690-a0eec528715d" name="Default" comment="introduced modularity">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/baseline_pytorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/baseline_pytorch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/baseline_pytorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/baseline_pytorch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/utils_dynamics.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/utils_dynamics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/utils_visualization.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/utils_visualization.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,7 +63,29 @@
       <recent name="$PROJECT_DIR$/baseline" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.baseline_pytorch">
+    <configuration name="TrackerDynBoxes" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="TimeCycle-Dynamic-Tracking" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/baseline" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="baseline_pytorch" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="TimeCycle-Dynamic-Tracking" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -88,9 +108,33 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="utils_visualization" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="TimeCycle-Dynamic-Tracking" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/baseline" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/baseline/utils_visualization.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Python.baseline_pytorch" />
+        <item itemvalue="Python.utils_visualization" />
+        <item itemvalue="Python.TrackerDynBoxes" />
       </list>
     </recent_temporary>
   </component>
@@ -105,36 +149,62 @@
       <option name="presentableId" value="Default" />
       <updated>1579888738360</updated>
       <workItem from="1582822658304" duration="43000" />
-      <workItem from="1582822702126" duration="715000" />
+      <workItem from="1582822702126" duration="12218000" />
     </task>
+    <task id="LOCAL-00001" summary="introduced modularity">
+      <created>1582823699029</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1582823699029</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="introduced modularity" />
+    <option name="LAST_COMMIT_MESSAGE" value="introduced modularity" />
+  </component>
   <component name="WindowStateProjectService">
-    <state width="1878" height="304" key="GridCell.Tab.0.bottom" timestamp="1582823610708">
+    <state x="274" y="-938" key="CommitChangelistDialog2" timestamp="1582823698840">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
-    <state width="1878" height="304" key="GridCell.Tab.0.bottom/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582823610708" />
-    <state width="1878" height="304" key="GridCell.Tab.0.center" timestamp="1582823610707">
+    <state x="274" y="-938" key="CommitChangelistDialog2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582823698840" />
+    <state width="1878" height="304" key="GridCell.Tab.0.bottom" timestamp="1582841823572">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
-    <state width="1878" height="304" key="GridCell.Tab.0.center/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582823610707" />
-    <state width="1878" height="304" key="GridCell.Tab.0.left" timestamp="1582823610705">
+    <state width="1878" height="304" key="GridCell.Tab.0.bottom/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582841823572" />
+    <state width="1398" height="304" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1582828269336" />
+    <state width="1878" height="304" key="GridCell.Tab.0.center" timestamp="1582841823571">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
-    <state width="1878" height="304" key="GridCell.Tab.0.left/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582823610705" />
-    <state width="1878" height="304" key="GridCell.Tab.0.right" timestamp="1582823610707">
+    <state width="1878" height="304" key="GridCell.Tab.0.center/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582841823571" />
+    <state width="1398" height="304" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1582828269335" />
+    <state width="1878" height="304" key="GridCell.Tab.0.left" timestamp="1582841823570">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
-    <state width="1878" height="304" key="GridCell.Tab.0.right/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582823610707" />
+    <state width="1878" height="304" key="GridCell.Tab.0.left/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582841823570" />
+    <state width="1398" height="304" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1582828269334" />
+    <state width="1878" height="304" key="GridCell.Tab.0.right" timestamp="1582841823572">
+      <screen x="-249" y="-1080" width="1920" height="1080" />
+    </state>
+    <state width="1878" height="304" key="GridCell.Tab.0.right/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582841823572" />
+    <state width="1398" height="304" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1582828269335" />
     <state x="220" y="-901" key="SettingsEditor" timestamp="1582822680315">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
     <state x="220" y="-901" key="SettingsEditor/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582822680315" />
+    <state x="311" y="-800" key="Vcs.Push.Dialog.v2" timestamp="1582823712786">
+      <screen x="-249" y="-1080" width="1920" height="1080" />
+    </state>
+    <state x="311" y="-800" key="Vcs.Push.Dialog.v2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582823712786" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$baseline_pytorch.coverage" NAME="baseline_pytorch Coverage Results" MODIFIED="1582823610698" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
+    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$utils_visualization.coverage" NAME="utils_visualization Coverage Results" MODIFIED="1582835976371" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
+    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$TrackerDynBoxes.coverage" NAME="TrackerDynBoxes Coverage Results" MODIFIED="1582835401203" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
+    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$baseline_pytorch.coverage" NAME="baseline_pytorch Coverage Results" MODIFIED="1582841823564" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
   </component>
 </project>

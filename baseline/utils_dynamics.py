@@ -31,26 +31,27 @@ def Hankel(s0, stitch=False, s1=0):
 
 
 def Gram(H, eps):
-    """ Generates a candidate sequence given an index
+    """ Generates a normalized Gram matrix given the Hankel matrix and a noise factor
     Args:
-        - seq_lengths: list containing the number of candidates per frame (T)
-        - idx: index of the desired sequence (1)
+        - H: Hankel matrix containing temporal information
+        - eps: noise factor (1)
     Returns:
-        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+        - Gnorm: normalized Gram matrix
     """
-    N = np.power(eps, 2) * H.shape[0] * torch.eye(H.shape[0])
-    G = torch.matmul(H, H.t()) + N
+    N = np.power(eps, 2) * torch.eye(H.shape[0])
+    G = torch.matmul(H, H.t())
     Gnorm = G/torch.norm(G, 'fro')
+    Gnorm = Gnorm + N
     return Gnorm
 
 
 def JBLD(X, Y, det):
-    """ Generates a candidate sequence given an index
+    """ Computes the Jensen-Bregman LogDet (JBLD) distance between two Gram matrices
     Args:
-        - seq_lengths: list containing the number of candidates per frame (T)
-        - idx: index of the desired sequence (1)
+        - X and Y: Normalized Gram matrices
+        - det: Boolean indicating if the determinant is going to be computed or not
     Returns:
-        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+        - d: JBLD distance value between X and Y
     """
     d = torch.log(torch.det((X + Y)/2)) - 0.5*torch.log(torch.det(torch.matmul(X, Y)))
     if not det:
@@ -61,12 +62,14 @@ def JBLD(X, Y, det):
 
 
 def compare_dynamics(data_root, data, eps, BS=1):
-    """ Generates a candidate sequence given an index
+    """ Compares dynamics between two sequences
     Args:
-        - seq_lengths: list containing the number of candidates per frame (T)
-        - idx: index of the desired sequence (1)
+        - data_root:
+        - data:
+        - eps:
+        - BS:
     Returns:
-        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+        - dist: (BS, 2)
     """
     dist = torch.zeros(BS, 2, device=device)
     for n_batch in range(BS):
@@ -74,18 +77,15 @@ def compare_dynamics(data_root, data, eps, BS=1):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), False)
-    dist = torch.mean(dist, 1)
-    print(dist[0].item())
     return dist
 
 
 def predict_Hankel(H):
     """ Generates a candidate sequence given an index
     Args:
-        - seq_lengths: list containing the number of candidates per frame (T)
-        - idx: index of the desired sequence (1)
+        - H:
     Returns:
-        - sequence: sequence corresponding to the provided index (1, T, (x,y))
+        - first_term:
     """
     rows, cols = H.size()
     U, S, V = torch.svd(H)
