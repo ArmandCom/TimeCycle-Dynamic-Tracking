@@ -1,0 +1,5 @@
+SiamMask/results/
+SiamMask/results-seagulls/
+SiamMask/data/
+*.pyc
+*.pth
