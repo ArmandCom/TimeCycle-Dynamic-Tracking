@@ -137,11 +137,13 @@ class TrackerDynBoxes:
                 # Choose the minimum
                 min_idx_jbld = torch.argmin(JBLDs) 
                 min_val_jbld = JBLDs[min_idx_jbld, 0]
+                print(min_val_jbld.item())
                 point_to_add = self.generate_seq_from_tree(seqs_lengths, min_idx_jbld)
                 point_to_add = point_to_add[0, 0, :]
-                # print("idx of jbld = ", min_idx_jbld)
+                
                 # Classify candidate
                 classification_outcome = self.classify(min_val_jbld)  # -1 bad, 1 good
+                classification_outcome = 1
                 if classification_outcome == -1:
                     print("predict")
                     Hx = Hankel(self.buffer_past_x)
@@ -153,8 +155,6 @@ class TrackerDynBoxes:
                 else:
                     # We only use the JBLD if it is consistent with past dynamics, i.e, we did not have to predict
                     self.past_JBLDs.append(min_val_jbld)
-                    # point_to_add[0] = float(self.buffer_future_x[0][0])
-                    # point_to_add[1] = float(self.buffer_future_y[0][0])
                 # update buffers
                 self.update_buffers(point_to_add)
             
@@ -197,9 +197,10 @@ def Gram(H, eps):
     Returns:
         - sequence: sequence corresponding to the provided index (1, T, (x,y))
     """
-    N = np.power(eps, 2) * H.shape[0] * torch.eye(H.shape[0])
-    G = torch.matmul(H, H.t()) + N
+    N = np.power(eps, 2) * torch.eye(H.shape[0])
+    G = torch.matmul(H, H.t())
     Gnorm = G/torch.norm(G, 'fro')
+    Gnorm = Gnorm + N
     return Gnorm
 
 
@@ -212,9 +213,10 @@ def JBLD(X, Y, det):
         - sequence: sequence corresponding to the provided index (1, T, (x,y))
     """
     d = torch.log(torch.det((X + Y)/2)) - 0.5*torch.log(torch.det(torch.matmul(X, Y)))
+
     if not det:
         d = (torch.det((X + Y) / 2)) - 0.5 * (torch.det(torch.matmul(X, Y)))
-        # print("torch.det((X+Y)) = ", torch.det(X+Y))
+
     return d
 
 
@@ -231,9 +233,10 @@ def compare_dynamics(data_root, data, BS=1):
         for d in range(2):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
-            dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), False)
+            dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), True)
+    
+    # print(dist[0][0].item()) # Print only x information
     dist = torch.mean(dist, 1)
-    print(dist[0].item())
     return dist
 
 
@@ -258,7 +261,7 @@ device = torch.device('cpu')
 # device = torch.device('cuda:0')
 
 # Parameters
-eps = 0.0001  # Gram Matrix noise
+eps = 1e-5 # Gram Matrix noise
 directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
 
 # Tracker data
@@ -318,10 +321,6 @@ def plot_candidates_and_trajectory(data, points_tracked_npy, T0, T, count_t = 0)
                     plt.scatter(t, points[c][0][0], s=50, c='k', zorder=1, alpha=0.75)
                     plt.scatter(t, points[c][0][1], s=50, c='k', zorder=1, alpha=0.75)
             
-    # time = np.arange(len(data)-T-T0+1)
-    # plt.scatter(time, points_tracked_npy[:, 0], s=25, c='tomato', zorder=2, label='decided x')
-    # plt.scatter(time, points_tracked_npy[:, 1], s=25, c='orange', zorder=1, label='decided y')
-    # plt.legend(loc="center left")
     tit = 'Trajectory Evolution with T0=' + str(T0) + ' and T=' + str(T)
     plt.title(tit)
     plt.xlabel('Time')
@@ -331,14 +330,14 @@ def plot_candidates_and_trajectory(data, points_tracked_npy, T0, T, count_t = 0)
 device = torch.device('cpu')
 # device = torch.device('cuda:0')
 # Parameters
-eps = 0.0001  # Gram Matrix noise
+eps = 1e-1 # Gram Matrix noise
 # directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
-directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
+directory = '/data/Ponc/tracking/centroids_tree_nhl.obj'
 # Tracker data
 with open(directory, 'rb') as f:
     data = pkl.load(f)
-T0 = 6
-T = 2
+T0 = 9
+T = 3
 tracker = TrackerDynBoxes(T0=T0, T=T)
 points_tracked_npy = np.zeros((len(data)-T0+1, 2))
 print("Size of npy = ", points_tracked_npy.shape)
@@ -349,7 +348,7 @@ for t, points in enumerate(data):
     points_tracked = tracker.decide(points)
     if t >= T0+T-1 :
         if(len(points)>1):
-            print("-------")
+            pass
         # print("t = ", t)
         # print("retorna el tracker = ", points_tracked)
         # print("t-T+1 = ", t-T+1)
@@ -358,16 +357,3 @@ for t, points in enumerate(data):
 # print(points_tracked_npy)
 plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
 
-jblds = tracker.past_JBLDs
-jblds = np.asarray(jblds)
-mean_JBLD_window = np.mean(jblds[:T0])
-a_w0 = np.max(jblds[:T0])
-a = np.max(jblds)
-th = 10*a_w0
-for t, dis in enumerate(jblds):
-    if dis>th:
-        plt.scatter(t, dis, c='r')
-    else:
-        plt.scatter(t, dis, c='b')
-plt.ylim(-a/5, a)
-plt.show()
