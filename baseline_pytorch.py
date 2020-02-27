@@ -102,13 +102,13 @@ class TrackerDynBoxes:
             # point_to_add = torch.tensor([float(candidates[0][0][0]), float(candidates[0][0][1])])
             if len(candidates) > 1:
                 raise ValueError('There is more than one candidate in the first T0 frames')
-            if(self.current_t > 2):
-                buffers_past = torch.cat([self.buffer_past_x, self.buffer_past_y], dim=1).unsqueeze(0)
-                cand_torch = torch.empty((1,1,2))
-                cand_torch[0,0,0] = float(candidates[0][0][0])
-                cand_torch[0,0,1] = float(candidates[0][0][1])
-                jbld_ = compare_dynamics(buffers_past.type(torch.FloatTensor), cand_torch.type(torch.FloatTensor))
-                self.JBLDs_init.append(jbld_)
+            # if(self.current_t > 2):
+            #     buffers_past = torch.cat([self.buffer_past_x, self.buffer_past_y], dim=1).unsqueeze(0)
+            #     cand_torch = torch.empty((1,1,2))
+            #     cand_torch[0,0,0] = float(candidates[0][0][0])
+            #     cand_torch[0,0,1] = float(candidates[0][0][1])
+            #     jbld_ = compare_dynamics(buffers_past.type(torch.FloatTensor), cand_torch.type(torch.FloatTensor))
+            #     self.JBLDs_init.append(jbld_)
         else:
             # Append points to buffers
             temp_list_x = []
@@ -214,7 +214,7 @@ def JBLD(X, Y, det):
     d = torch.log(torch.det((X + Y)/2)) - 0.5*torch.log(torch.det(torch.matmul(X, Y)))
     if not det:
         d = (torch.det((X + Y) / 2)) - 0.5 * (torch.det(torch.matmul(X, Y)))
-        print("torch.det((X+Y)) = ", torch.det(X+Y))
+        # print("torch.det((X+Y)) = ", torch.det(X+Y))
     return d
 
 
@@ -345,8 +345,11 @@ print("Size of npy = ", points_tracked_npy.shape)
 
 for t, points in enumerate(data):
     # print("---------")
+
     points_tracked = tracker.decide(points)
     if t >= T0+T-1 :
+        if(len(points)>1):
+            print("-------")
         # print("t = ", t)
         # print("retorna el tracker = ", points_tracked)
         # print("t-T+1 = ", t-T+1)
