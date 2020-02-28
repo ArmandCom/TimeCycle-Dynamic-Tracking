@@ -55,9 +55,11 @@ class TrackerDynBoxes:
             - belongs:
         """
         belongs = 1
-        # if self.current_t == 17 or self.current_t == 18 or self.current_t == 19:
-        #     # predict
-        #     belongs = - 1
+        past_jbld = self.JBLDs_x[-1]
+        if self.current_t==18 or self.current_t==19:
+            # predict
+            print('predicting frame:', self.current_t)
+            belongs = - 1
         return belongs
 
     def update_buffers(self, new_result):
@@ -105,21 +107,20 @@ class TrackerDynBoxes:
                 seqs_lengths = []
                 [seqs_lengths.append(len(y)) for y in self.buffer_future_x]
                 num_of_seqs = reduce(mul, seqs_lengths)
-                JBLDs = torch.zeros((num_of_seqs, 2))
+                JBLDs = torch.zeros((num_of_seqs, 1))
                 buffers_past = torch.cat([self.buffer_past_x, self.buffer_past_y], dim=1).unsqueeze(0)
                 for i in range(num_of_seqs):
                     # Build each sequence of tree
                     seq = self.generate_seq_from_tree(seqs_lengths, i)
                     # Compute JBLD for each
                     # compare_dynamics needs a sequence of (1, T0, 2) and (1, T, 2)
-                    JBLDs[i, :] = compare_dynamics(buffers_past.type(torch.FloatTensor), seq.type(torch.FloatTensor), self.noise)
+                    JBLDs[i, 0] = compare_dynamics(buffers_past.type(torch.FloatTensor), seq.type(torch.FloatTensor), self.noise)
 
                 # Choose the minimum
-                min_idx_jbld = torch.argmin(JBLDs[:, 0])  # TODO: Generalitzar, ara agafa nomes la x
+                min_idx_jbld = torch.argmin(JBLDs)
                 min_val_jbld = JBLDs[min_idx_jbld, 0]
                 point_to_add = self.generate_seq_from_tree(seqs_lengths, min_idx_jbld)
                 point_to_add = point_to_add[0, 0, :]
-                print('Appended JBLD')
                 self.JBLDs_x.append(min_val_jbld)
 
                 # Classify candidate

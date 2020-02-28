@@ -8,8 +8,8 @@ device = torch.device('cpu')
 
 # Parameters
 eps = 0.0001  # Gram Matrix noise
-T0 = 8
-T = 3
+T0 = 5
+T = 2
 
 # Tracker data
 directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
@@ -23,22 +23,15 @@ len_output = len(data) - T0 - T + 1
 points_tracked_npy = np.zeros((len_output, 2))
 
 for t, points in enumerate(data):
-    print('\ntime:', t)
     points_tracked = tracker.decide(points)
-    print(points_tracked)
     if t >= T0 + T - 1:
         points_tracked_npy[t-T-T0+1, :] = np.asarray(points_tracked)
 
 jblds = np.asarray(tracker.JBLDs_x)
 
-print('len points', points_tracked_npy.shape)
-print('len jblds', jblds.shape)
-print('len data', len(data))
-print('supposed length:', len(data)-T0-T+1)
-
 
 # Visualization
-# plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
+plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
 plot_candidates_and_jblds(data, points_tracked_npy, jblds, T0, T)
 
 

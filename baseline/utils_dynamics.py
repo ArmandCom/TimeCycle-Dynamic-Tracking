@@ -77,6 +77,7 @@ def compare_dynamics(data_root, data, eps, BS=1):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), False)
+    dist = dist[0][0].item()  # Print only x information
     return dist
 
 
