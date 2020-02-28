@@ -48,9 +48,9 @@ def plot_candidates_and_jblds(coord, data, points_tracked_npy, jblds, T0, T):
     for t, points in enumerate(data):
         if len(points) == 1:
             ax1.scatter(t, points[0][0][coord], s=size_big, c='k', zorder=2, alpha=0.75)
-        else:
-            for c in range(len(points)):
-                ax1.scatter(t, points[c][0][coord], s=size_big, c='k', zorder=2, alpha=0.75)
+        # else:
+        #     for c in range(len(points)):
+        #         ax1.scatter(t, points[c][0][coord], s=size_big, c='k', zorder=2, alpha=0.75)
         if t % 3 == 0:
             ax1.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
             ax2.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
@@ -67,3 +67,4 @@ def plot_candidates_and_jblds(coord, data, points_tracked_npy, jblds, T0, T):
     ax1.set_xlim(0, len(data))
     ax2.set_xlim(0, len(data))
     plt.show()
+
