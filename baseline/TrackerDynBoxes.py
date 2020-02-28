@@ -28,6 +28,7 @@ class TrackerDynBoxes:
         self.buffer_future_y = []
         self.current_t = 0
         self.JBLDs_x = []
+        self.count_pred = 0
 
 
     def generate_seq_from_tree(self, seq_lengths, idx):
@@ -55,11 +56,13 @@ class TrackerDynBoxes:
             - belongs:
         """
         belongs = 1
+        th = 0.0005
         past_jbld = self.JBLDs_x[-1]
-        if self.current_t==18 or self.current_t==19:
+        if cand > th and self.count_pred < 2:
             # predict
             print('predicting frame:', self.current_t)
             belongs = - 1
+            self.count_pred +=1
         return belongs
 
     def update_buffers(self, new_result):

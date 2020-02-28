@@ -7,12 +7,13 @@ device = torch.device('cpu')
 # device = torch.device('cuda:0')
 
 # Parameters
-eps = 0.0001  # Gram Matrix noise
+eps = 1e-1  # Gram Matrix noise
 T0 = 5
 T = 2
 
 # Tracker data
 directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
+directory = '/Users/marinaalonsopoal/PycharmProjects/TimeCycle-Dynamic-Tracking/centroids_tree_nfl.obj'
 directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
 with open(directory, 'rb') as f:
     data = pkl.load(f)
@@ -31,7 +32,7 @@ jblds = np.asarray(tracker.JBLDs_x)
 
 
 # Visualization
-plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
+# plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
 plot_candidates_and_jblds(data, points_tracked_npy, jblds, T0, T)
 
 
