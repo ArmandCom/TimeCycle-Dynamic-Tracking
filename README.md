@@ -1,14 +1,5 @@
 # TimeCycle Dynamic Tracking
 
-## TODO:
+![image](https://user-images.githubusercontent.com/43316350/75502150-fac35980-599f-11ea-9a01-dad2c71cb978.png)
 
- 0. Acabar d'entendre test (A/M/P) 
- 1. Test mask amb les dues taronges (P)
- 2. Provar de passar l'OF com a un altre channel (M)
- 3. Generar OF dels videos (M) . /data/Armand/timecycle...
- 4. Visualitzar attention maps **Paste result here (img)**
- 
- ⋅⋅⋅4.1. Seleccionar les i/j basant-se en una ROI al voltant del pixel i/j (entendre el mapping)
- 
- ⋅⋅⋅4.2. Esbrinar com a partir dels maxims seleccionats *(t-k : t-1)* podem seleccionar el tracklet *t*. Es a dir, fer DYAN (yt = Dc) i veure el c mes esparso que sera el tracklet correcte.
- 
+![image](https://user-images.githubusercontent.com/43316350/75502097-d49db980-599f-11ea-8d6c-436c1ed1832f.png)
