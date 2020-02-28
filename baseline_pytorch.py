@@ -82,7 +82,7 @@ class TrackerDynBoxes:
 
     def decide(self, *candidates):
         # print(self.current_t)
-        # print(candidates)
+        print(candidates)
         """ Generates a candidate sequence given an index
         Args:
             - candidates: list containing the number of candidates per frame (T)
@@ -236,7 +236,9 @@ def compare_dynamics(data_root, data, BS=1):
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), True)
     
     # print(dist[0][0].item()) # Print only x information
+    # dist = dist[0][0].item()
     dist = torch.mean(dist, 1)
+    # 
     return dist
 
 
@@ -287,7 +289,7 @@ with open(directory, 'rb') as f:
 def plot_candidates_and_trajectory(data, points_tracked_npy, T0, T, count_t = 0):
     
     for t, points in enumerate(data):
-        if(t>T0+T-1): #and t<=len(data)-T):
+        if(t>T0+T-1): 
             # print("t = ", t)
             if t == 0:
                 plt.scatter(t, points[0][0][0], s=50, c='k', zorder=1, alpha=0.75, label='candidates')
@@ -306,7 +308,7 @@ def plot_candidates_and_trajectory(data, points_tracked_npy, T0, T, count_t = 0)
                 plt.scatter(t-(T), int(points_tracked_npy[count_t,0]), s=25, c='tomato', zorder=2, label='decided x')
                 plt.scatter(t-(T), int(points_tracked_npy[count_t,1]), s=25, c='orange', zorder=1, label='decided y')
                 count_t = count_t + 1
-                # print(count_t)
+                print(count_t)
         else:    
             if t == 0:
                 # pass
@@ -332,14 +334,14 @@ device = torch.device('cpu')
 # Parameters
 eps = 1e-1 # Gram Matrix noise
 # directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
-directory = '/data/Ponc/tracking/centroids_tree_nhl.obj'
+directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
 # Tracker data
 with open(directory, 'rb') as f:
     data = pkl.load(f)
-T0 = 9
-T = 3
+T0 = 5
+T = 1
 tracker = TrackerDynBoxes(T0=T0, T=T)
-points_tracked_npy = np.zeros((len(data)-T0+1, 2))
+points_tracked_npy = np.zeros((len(data)-T0+1-T, 2))
 print("Size of npy = ", points_tracked_npy.shape)
 
 for t, points in enumerate(data):
@@ -349,11 +351,11 @@ for t, points in enumerate(data):
     if t >= T0+T-1 :
         if(len(points)>1):
             pass
-        # print("t = ", t)
-        # print("retorna el tracker = ", points_tracked)
-        # print("t-T+1 = ", t-T+1)
-        # print("t-T-T0+1 = ", t-T-T0+1)
+        print("t = ", t)
+        print("retorna el tracker = ", points_tracked)
+        print("t-T+1 = ", t-T+1)
+        print("t-T-T0+1 = ", t-T-T0+1)
         points_tracked_npy[t-T-T0+1, :] = np.asarray(points_tracked)
-# print(points_tracked_npy)
+print(points_tracked_npy)
 plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
 
