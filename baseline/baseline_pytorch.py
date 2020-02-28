@@ -10,6 +10,7 @@ device = torch.device('cpu')
 eps = 1e-1  # Gram Matrix noise
 T0 = 5
 T = 2
+coordinate = 0  # coordinate 0: x, 1: y
 
 # Tracker data
 directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
@@ -19,7 +20,7 @@ with open(directory, 'rb') as f:
     data = pkl.load(f)
 
 # Tracker
-tracker = TrackerDynBoxes(T0=T0, T=T, noise=eps)
+tracker = TrackerDynBoxes(T0=T0, T=T, noise=eps, coord=coordinate)
 len_output = len(data) - T0 - T + 1
 points_tracked_npy = np.zeros((len_output, 2))
 
@@ -33,7 +34,7 @@ jblds = np.asarray(tracker.JBLDs_x)
 
 # Visualization
 # plot_candidates_and_trajectory(data, points_tracked_npy, T0, T)
-plot_candidates_and_jblds(data, points_tracked_npy, jblds, T0, T)
+plot_candidates_and_jblds(coordinate, data, points_tracked_npy, jblds, T0, T)
 
 
 

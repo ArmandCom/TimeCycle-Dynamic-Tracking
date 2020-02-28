@@ -4,20 +4,9 @@ from operator import mul
 
 
 class TrackerDynBoxes:
-    """ Generates a candidate sequence given an index
-    Attributes:
-        - T0: size of the past window
-        - T: size of the future window
-        - buffer_past_x:
-        - buffer_past_y:
-        - buffer_future_x:
-        - buffer_future_y:
-        - current_T0:
-        - current_T:
-        - past_JBLDs:
-    """
+    # Generates a candidate sequence given an index
 
-    def __init__(self, T0=7, T=2, noise=0.0001):
+    def __init__(self, T0=7, T=2, noise=0.0001, coord=0):
         """ Inits TrackerDynBoxes"""
         self.T0 = T0
         self.T = T
@@ -29,6 +18,7 @@ class TrackerDynBoxes:
         self.current_t = 0
         self.JBLDs_x = []
         self.count_pred = 0
+        self.coord = coord
 
 
     def generate_seq_from_tree(self, seq_lengths, idx):
@@ -58,11 +48,11 @@ class TrackerDynBoxes:
         belongs = 1
         th = 0.0005
         past_jbld = self.JBLDs_x[-1]
-        if cand > th and self.count_pred < 2:
-            # predict
-            print('predicting frame:', self.current_t)
-            belongs = - 1
-            self.count_pred +=1
+        # if cand > th and self.count_pred < 2:
+        #         #     # predict
+        #         #     print('predicting frame:', self.current_t)
+        #         #     belongs = - 1
+        #         #     self.count_pred +=1
         return belongs
 
     def update_buffers(self, new_result):
@@ -117,7 +107,7 @@ class TrackerDynBoxes:
                     seq = self.generate_seq_from_tree(seqs_lengths, i)
                     # Compute JBLD for each
                     # compare_dynamics needs a sequence of (1, T0, 2) and (1, T, 2)
-                    JBLDs[i, 0] = compare_dynamics(buffers_past.type(torch.FloatTensor), seq.type(torch.FloatTensor), self.noise)
+                    JBLDs[i, 0] = compare_dynamics(buffers_past.type(torch.FloatTensor), seq.type(torch.FloatTensor), self.noise, self.coord)
 
                 # Choose the minimum
                 min_idx_jbld = torch.argmin(JBLDs)
@@ -136,12 +126,6 @@ class TrackerDynBoxes:
                     point_to_add[0] = px
                     point_to_add[1] = py
 
-                # else:
-                #     # We only use the JBLD if it is consistent with past dynamics, i.e, we did not have to predict
-                #     self.JBLDs_x.append(min_val_jbld)
-                #     # point_to_add[0] = float(self.buffer_future_x[0][0])
-                #     # point_to_add[1] = float(self.buffer_future_y[0][0])
-                # update buffers
                 self.update_buffers(point_to_add)
 
             self.current_t += 1
