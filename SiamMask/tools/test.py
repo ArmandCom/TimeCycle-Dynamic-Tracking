@@ -398,10 +398,10 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
 
                                 
                         overlay_result = cv2.addWeighted(im_debug, 0.70, im_debug_overlay, 0.3, 0.0)
-                        cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', overlay_result)
-                        np.save('/data/Ponc/tracking/torch_data/resized/'+"{:05d}".format(arrendatario)+'.npy', torch_data_delta_size)
+                        # cv2.imwrite('/data/Ponc/tracking/results/windows-seagulls-debug/'+'search_'+str(arrendatario)+'.jpeg', overlay_result)
+                        # np.save('/data/Ponc/tracking/torch_data/resized/'+"{:05d}".format(arrendatario)+'.npy', torch_data_delta_size)
                         
-                    np.save('/data/Ponc/tracking/results/mevasa/'+"{:05d}".format(arrendatario)+'.npy', attmap)
+                    # np.save('/data/Ponc/tracking/results/mevasa/'+"{:05d}".format(arrendatario)+'.npy', attmap)
                 else:  # empty mask
                     location = cxy_wh_2_rect(target_pos, target_sz)
                     rbox_in_img = np.array([[location[0], location[1]],
