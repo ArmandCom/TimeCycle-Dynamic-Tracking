@@ -72,12 +72,14 @@ def compare_dynamics(data_root, data, eps, coord, BS=1):
     Returns:
         - dist: (BS, 2)
     """
+    dims = ['X', 'Y']
     dist = torch.zeros(BS, 2, device=device)
     for n_batch in range(BS):
         for d in range(2):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), True)
+            print(dims[d],' ',dist[n_batch,d])
     dist = dist[0][coord].item()  # Print only x information
     return dist
 

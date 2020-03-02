@@ -8,9 +8,9 @@ device = torch.device('cpu')
 
 # Parameters
 eps = 1e-1  # Gram Matrix noise
-T0 = 7
+T0 = 10
 T = 3
-coordinate = 0  # coordinate 0: x, 1: y
+coordinate = 1  # coordinate 0: x, 1: y
 
 # Tracker data
 directory = '/data/Ponc/tracking/centroids_definitius/centroids_tree_warmup_edmonton_97.obj'

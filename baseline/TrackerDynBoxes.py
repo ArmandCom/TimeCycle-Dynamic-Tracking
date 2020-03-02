@@ -48,8 +48,8 @@ class TrackerDynBoxes:
         belongs = 1
         th = 0.0005
         past_jbld = self.JBLDs_x[-1]
-        frame_to_predict = 7 + self.T - 1
-        if self.current_t == frame_to_predict or self.current_t == frame_to_predict+1 or self.current_t == frame_to_predict+1 or self.current_t == frame_to_predict+2 or self.current_t == frame_to_predict+3:
+        frame_to_predict = 14 + self.T - 1
+        if self.current_t >= frame_to_predict and self.current_t < frame_to_predict + 3:
             belongs = -1
         return belongs
 
@@ -64,6 +64,7 @@ class TrackerDynBoxes:
         self.buffer_past_y[-1, 0] = new_result[1]
         del self.buffer_future_x[0]
         del self.buffer_future_y[0]
+
 
     def decide(self, *candidates):
         """ Generates a candidate sequence given an index
