@@ -28,7 +28,7 @@ import models.videos.model_test as video3d
 
 from utils import Logger, AverageMeter, mkdir_p, savefig
 # import models.dataset.davis_test as davis
-import models.dataset.balls_test as balls
+import models.dataset.smot_test as loader
 
 from geotnf.transformation import GeometricTnf
 
@@ -62,7 +62,7 @@ def str_to_bool(v):
 # Parse arguments
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 
-parser.add_argument('--videoLen', default=8, type=int,
+parser.add_argument('--videoLen', default=1, type=int,
                     help='predict how many frames away')
 
 # Datasets
@@ -116,7 +116,7 @@ parser.add_argument('--topk_vis', default=20, type=int,
 
 parser.add_argument('--frame_gap', default=2, type=int,
                     help='predict how many frames away')
-parser.add_argument('--initialTime', default=, type=int,
+parser.add_argument('--initialTime', default=0, type=int,
                     help='starting point of input frames')
 
 parser.add_argument('--cropSize', default=320, type=int,
@@ -190,10 +190,15 @@ def main():
         mkdir_p(args.checkpoint)
 
     # Note: keep increasing number of input frames:
-    for i in range(1,10):
-        params['initialTime'] = i
+
+    params['initialTime'] = 0
+    for i in range(1, 10):
+        if i > 4: #Note: once it gets to length L, it takes a rolling window of that size
+            params['initialTime'] += 1
+        else:
+            params['videoLen'] = i
         val_loader = torch.utils.data.DataLoader(
-            balls.DavisSet(params, is_train=False),
+            loader.DavisSet(params, is_train=False),
             batch_size=int(params['batchSize']), shuffle=False,
             num_workers=args.workers, pin_memory=True)
 
@@ -260,7 +265,7 @@ def test(val_loader, model, epoch, use_cuda):
         finput_num_ori = params['videoLen']
         finput_num     = finput_num_ori
         initial_time = params['initialTime']
-        print('Number of frames input: ', initial_time)
+        print('Initial_time: ', initial_time, '\n', 'Number of frames input: ', finput_num_ori)
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -360,7 +365,7 @@ def test(val_loader, model, epoch, use_cuda):
         imgs_toprint = []
 
         # ref image
-        # Note: Resize each frame to double h and w and save
+        # Note: Resize each frame to double h and w and sav
         for t in range(imgs_set.shape[0]):
             img_now = imgs_set[t]
 
@@ -406,7 +411,7 @@ def test(val_loader, model, epoch, use_cuda):
         # Note: finput_num_ori is the number of inputs we will take for prediction (one of them is 0)
         # Note: im_num is n_frames - n_frames_input
         # Note: for iter in range(0, im_num, now_batch_size):
-        for iter in range(finput_num_ori-1,finput_num_ori): #Note: initial time
+        for iter in range(1): #Note: initial time
 
             print(iter)
 
@@ -414,29 +419,48 @@ def test(val_loader, model, epoch, use_cuda):
             startid = iter
             endid   = iter + now_batch_size
 
-            # if endid > im_num:
-            #     endid = im_num
+            # # if endid > im_num:
+            # #     endid = im_num
+            # now_batch_size2 = endid - startid
+            # for i in range(now_batch_size2):
+            # Note: initially we iterated over the batch_size. but we have set it to 1
+            if True:
+                # imgs = imgs_total[:, iter + i + 1: iter + i + finput_num_ori, :, :, :]
+                imgs = imgs_total[:, iter + initial_time: iter + finput_num_ori + initial_time, :, :, :]
+                # imgs2 = imgs_total[:, 0, :, :, :].unsqueeze(1)
+                # imgs = torch.cat((imgs2, imgs), dim=1)
+            # else:
+            #     imgs = imgs_total[:, 0, :, :, :].unsqueeze(1)
 
-            now_batch_size2 = endid - startid
-
-            for i in range(now_batch_size2):
-
-                if finput_num_ori > 1:
-                    # imgs = imgs_total[:, iter + i + 1: iter + i + finput_num_ori, :, :, :]
-                    imgs = imgs_total[:, iter + i + 1: iter + i + 1, :, :, :]
-                    # imgs2 = imgs_total[:, 0, :, :, :].unsqueeze(1)
-                    # imgs = torch.cat((imgs2, imgs), dim=1)
-                else:
-                    imgs = imgs_total[:, 0, :, :, :].unsqueeze(1)
-
-                imgs_tensor[i] = imgs
-                target_tensor[i, 0] = imgs_total[0, iter + i + finput_num_ori]
+            imgs_tensor[0] = imgs
+            target_tensor[0, 0] = imgs_total[0, iter + finput_num_ori + initial_time]
 
             corrfeat2_now = model(imgs_tensor, target_tensor)
-            corrfeat2_now = corrfeat2_now.view(now_batch_size, finput_num_ori, corrfeat2_now.size(1), corrfeat2_now.size(2), corrfeat2_now.size(3))
 
-            for i in range(now_batch_size2):
-                corrfeat2_set.append(corrfeat2_now[i].data.cpu().numpy())
+
+            corrfeat2_now = corrfeat2_now.view(now_batch_size, finput_num_ori, corrfeat2_now.size(1), corrfeat2_now.size(1))
+
+            # Note: unfold - spatial correlation
+            unfold = nn.Unfold(kernel_size=5, padding=2)
+            ii = torch.arange(height_dim * width_dim)
+            ii_shaped = ii.view(1, 1, height_dim, width_dim)/1.
+            jj = ii
+            ii_patches = unfold(ii_shaped)[0].type(torch.LongTensor).permute(1, 0).contiguous()
+            jj_patches = ii_patches
+
+            for t in range(finput_num_ori):
+                for i in range(corrfeat2_now.shape[0]):
+                    values = corrfeat2_now[0, t, ii_patches.view(-1), jj_patches.view(-1)]
+                    value = torch.mean(values.view(height_dim * width_dim, -1), dim=1)
+                    corrfeat2_now[0, t, ii, jj] = value
+
+                    jj_patches = torch.cat([jj_patches[1:, :], jj_patches[0:1, :]], dim=0)
+                    jj = torch.cat([jj[1:], jj[0:1]], dim=0)
+
+            # Note: initially we iterated over the batch_size. but we have set it to 1
+            corrfeat2_now = corrfeat2_now.view(now_batch_size, finput_num_ori, corrfeat2_now.size(2), height_dim, width_dim)
+
+            corrfeat2_set.append(corrfeat2_now[0].data.cpu().numpy())
 
         t04 = time.time()
         print(t04-t03, 'model forward', t03-t02, 'image prep')
@@ -462,7 +486,7 @@ def test(val_loader, model, epoch, use_cuda):
             corrfeat2   = torch.from_numpy(corrfeat2)
 
 
-            out_frame_num = int(finput_num)
+            # out_frame_num = int(finput_num)
             height_dim = corrfeat2.size(2)
             width_dim = corrfeat2.size(3)
 
@@ -471,6 +495,7 @@ def test(val_loader, model, epoch, use_cuda):
 
 
             topk_vis = args.topk_vis
+            topk_vis = 1 #TODO: undo hardcoding
             vis_ids_h = np.zeros((corrfeat2.shape[0], height_dim, width_dim, topk_vis)).astype(np.int)
             vis_ids_w = np.zeros((corrfeat2.shape[0], height_dim, width_dim, topk_vis)).astype(np.int)
 
@@ -488,12 +513,12 @@ def test(val_loader, model, epoch, use_cuda):
 
             t06 = time.time()
 
-            img_now = imgs_toprint[iter + finput_num_ori]
+            img_now = imgs_toprint[iter + initial_time + finput_num_ori]
 
             predlbls = np.zeros((height_dim, width_dim, len(lbl_set)))
             # predlbls2 = np.zeros((height_dim * width_dim, len(lbl_set)))
 
-            for t in range(finput_num-1,finput_num):
+            for t in range(0, finput_num_ori):
 
                 tt1 = time.time()
 
@@ -502,25 +527,27 @@ def test(val_loader, model, epoch, use_cuda):
 
                 hh, ww = vis_ids_h[t].flatten(), vis_ids_w[t].flatten()
 
-                if t == 0:
-                    lbl = lbls_resize2[0, hh, ww, :]
-                else:
-                    lbl = lbls_resize2[t + iter, hh, ww, :]
+                # if t == 0:
+                #     lbl = lbls_resize2[0, hh, ww, :]
+                # else:
+                lbl = lbls_resize2[t + initial_time + iter, hh, ww, :]
 
-                # check_corrfeat = corrfeat2[t, ww, hh, h, w]
                 np.add.at(predlbls, (h, w), lbl * corrfeat2[t, ww, hh, h, w][:, None])
+
 
             t07 = time.time()
             # print(t07-t06, 'lbl proc', t06-t05, 'argsorts')
-
             predlbls = predlbls / finput_num
 
+            print('Length of the label set: ', len(lbl_set))
             for t in range(len(lbl_set)):
                 nowt = t
                 predlbls[:, :, nowt] = predlbls[:, :, nowt] - predlbls[:, :, nowt].min()
                 predlbls[:, :, nowt] = predlbls[:, :, nowt] / predlbls[:, :, nowt].max()
 
-            lbls_resize2[iter + finput_num_ori] = predlbls
+            print('Predicted label id: ', iter + finput_num_ori + initial_time)
+            print('Lables_resize: ', lbls_resize2.shape)
+            lbls_resize2[iter + initial_time + finput_num_ori] = predlbls
 
             predlbls_cp = predlbls.copy()
             predlbls_cp = cv2.resize(predlbls_cp, (params['imgSize'], params['imgSize']))
@@ -530,17 +557,36 @@ def test(val_loader, model, epoch, use_cuda):
 
             predlbls_val = np.array(lbl_set)[np.argmax(predlbls_cp, axis=-1)]
             predlbls_val = predlbls_val.astype(np.uint8)
+            print('Shape of predicted labels :', predlbls_val.shape)
+            print('Shape of image :', img_now.shape)
             predlbls_val2 = cv2.resize(predlbls_val, (img_now.shape[0], img_now.shape[1]), interpolation=cv2.INTER_NEAREST)
 
             # activation_heatmap = cv2.applyColorMap(predlbls, cv2.COLORMAP_JET)
             img_with_heatmap =  np.float32(img_now) * 0.5 + np.float32(predlbls_val2) * 0.5
 
-            imname  = save_path + str(batch_idx) + '_' + str(iter + finput_num_ori) + '_label.jpg'
-            imname2  = save_path + str(batch_idx) + '_' + str(iter + finput_num_ori) + '_mask.png'
+            imname  = save_path + str(batch_idx) + '_' + str(iter + finput_num_ori + initial_time) + '_label.jpg'
+            imname2  = save_path + str(batch_idx) + '_' + str(iter + finput_num_ori + initial_time) + '_mask.png'
+            imname_att  = save_path + 'att_' + str(batch_idx) + '_' + str(iter + finput_num_ori + initial_time) + '.png'
 
             scipy.misc.imsave(imname, np.uint8(img_with_heatmap))
             scipy.misc.imsave(imname2, np.uint8(predlbls_val))
-            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ str(iter + finput_num_ori + 39) + '_mask.png', np.uint8(predlbls_val))
+
+
+            att_toprint = np.repeat(np.uint8(corrfeat2[0]*255).reshape(1600,1600)[:,:,np.newaxis], 3, axis=2)
+            att_toprint = np.repeat(np.uint8(predlbls_cp[:,:,1]*255)[:,:,np.newaxis], 3, axis=2)
+            att_toprint =  np.float32(img_now) * 0.5 + cv2.resize(np.float32(att_toprint),(640,640)) * 0.5
+            scipy.misc.imsave(imname_att, att_toprint)
+
+            # if initial_time == 0:
+            #     imname_att = save_path + 'att_init_' + str(batch_idx) + '_' + str(initial_time) + '.png'
+            #     att_toprint_init = np.uint8((lbls[0,0]/lbls.max()) * 255)
+            #     att_toprint_init = np.float32(img_now) * 0.5 + cv2.resize(np.float32(att_toprint_init), (640, 640)) * 0.5
+            #     scipy.misc.imsave(imname_att, att_toprint_init)
+
+
+            print(predlbls_val.shape)
+            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ str(iter + finput_num_ori + initial_time + 1) + '_mask.png', np.uint8(predlbls_val))
+            scipy.misc.imsave('/data/Armand/TimeCycle/davis/DAVIS/Annotations/480p/balls_juggling/'+ 'HM' + str(iter + finput_num_ori + initial_time + 1) + '.png', np.uint8(img_with_heatmap))
 
     fileout.close()
 
