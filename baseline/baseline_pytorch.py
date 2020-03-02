@@ -1,21 +1,21 @@
 import torch
 import pickle as pkl
-from baseline.TrackerDynBoxes import TrackerDynBoxes
-from baseline.utils_visualization import *
+from TrackerDynBoxes import TrackerDynBoxes
+from utils_visualization import *
 
 device = torch.device('cpu')
 # device = torch.device('cuda:0')
 
 # Parameters
 eps = 1e-1  # Gram Matrix noise
-T0 = 5
-T = 2
+T0 = 7
+T = 3
 coordinate = 0  # coordinate 0: x, 1: y
 
 # Tracker data
-directory = '/data/Ponc/tracking/centroids_tree_nfl.obj'
-directory = '/Users/marinaalonsopoal/PycharmProjects/TimeCycle-Dynamic-Tracking/centroids_tree_nfl.obj'
-directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
+directory = '/data/Ponc/tracking/centroids_definitius/centroids_tree_warmup_edmonton_97.obj'
+# directory = '/Users/marinaalonsopoal/PycharmProjects/TimeCycle-Dynamic-Tracking/centroids_tree_nfl.obj'
+# directory = '/Users/marinaalonsopoal/PycharmProjects/Marina/Tracker/centroids_tree_nhl.obj'
 with open(directory, 'rb') as f:
     data = pkl.load(f)
 

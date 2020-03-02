@@ -1,4 +1,4 @@
-from baseline.utils_dynamics import *
+from utils_dynamics import *
 from functools import reduce
 from operator import mul
 
@@ -48,11 +48,9 @@ class TrackerDynBoxes:
         belongs = 1
         th = 0.0005
         past_jbld = self.JBLDs_x[-1]
-        # if cand > th and self.count_pred < 2:
-        #         #     # predict
-        #         #     print('predicting frame:', self.current_t)
-        #         #     belongs = - 1
-        #         #     self.count_pred +=1
+        frame_to_predict = 7 + self.T - 1
+        if self.current_t == frame_to_predict or self.current_t == frame_to_predict+1 or self.current_t == frame_to_predict+1 or self.current_t == frame_to_predict+2 or self.current_t == frame_to_predict+3:
+            belongs = -1
         return belongs
 
     def update_buffers(self, new_result):

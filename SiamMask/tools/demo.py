@@ -113,7 +113,7 @@ if __name__ == '__main__':
     siammask.eval().to(device)
     
     # Parse Image file
-    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[32:88]
+    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))
     
     ims = [cv2.imread(imf) for imf in img_files]
     
@@ -125,6 +125,10 @@ if __name__ == '__main__':
         init_rect = (437, 306, 115,50) # Eagles
         init_rect = (737, 374, 100, 156) # NHL
         init_rect = (1027, 259, 57, 100) # NFL
+        init_rect = (422, 235, 49, 95) # warmup_capitals
+        init_rect = (71, 100, 178-71, 314-100) # warmup_edmonton oilers
+        init_rect = (419, 356, 77, 131) # austrian_hockey_warmup
+        init_rect = (1145, 253, 135, 294) # philadelphia_warmup
 
         x, y, w, h = init_rect
 
@@ -151,9 +155,6 @@ if __name__ == '__main__':
             print("num_bxs = ", len(rboxes))
             rboxes = filter_bboxes(rboxes,1, c=10*len(rboxes)) #puto recursiu, funciona be
             print("num_filtered = ", len(rboxes), " - ", rboxes[0][1])
-
-            # TODO: tracking
-            #(x,y) = tracker.decide(points) on points es una llista de candidats
 
             # dibuixar nomes la bbox filtrada si esta fora de la bona (state)
             locaux_bona = np.int0(state['ploygon'].flatten()).reshape((-1,2))
@@ -182,11 +183,11 @@ if __name__ == '__main__':
             
             cv2.polylines(im, [np.int0(location).reshape((-1, 1, 2))], True, (0, 255, 0), 3)
             cv2.putText(im,str(state['score']),(50,50),cv2.FONT_HERSHEY_COMPLEX,1.0,(0,255,0))
-            cv2.imwrite('/data/Ponc/tracking/results/crossing_football_superbowl_2020_debug/'+str(f)+'.jpeg', im)
+            cv2.imwrite('/data/Ponc/tracking/results/philadelphia_warmup_debug/'+str(f)+'.jpeg', im)
             all_bboxes.append(frame_boxes)
         toc += cv2.getTickCount() - tic
     
-    with open('/data/Ponc/tracking/centroids_tree_nfl.obj','wb') as fil:
+    with open('/data/Ponc/tracking/philadelphia_warmup.obj','wb') as fil:
         pickle.dump(all_bboxes, fil)
     
     toc /= cv2.getTickFrequency()
