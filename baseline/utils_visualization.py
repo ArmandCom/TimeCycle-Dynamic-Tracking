@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+import torch
+device = torch.device('cpu')
 
 def plot_candidates_and_trajectory(data, points_tracked_npy, T0, T, count_t=0):
     size_small = 15
@@ -68,3 +69,46 @@ def plot_candidates_and_jblds(coord, data, points_tracked_npy, jblds, T0, T):
     ax2.set_xlim(0, len(data))
     plt.show()
 
+
+
+def plot_data_and_smoothed(data, list_smoothed, W):
+    size = 60
+    c1 = 'blue'
+    c2 = 'red'
+    a2 = 0.5
+    fig, (ax1, ax2) = plt.subplots(2)
+    ax1.set_title('Original and Smoothed (W =' + str(W) + ') Coordinate X')
+    ax2.set_title('Original and Smoothed (W =' + str(W) + ') Coordinate Y')
+
+    for t, points in enumerate(data):
+        if len(points) == 1:
+            if t == 0:
+                ax1.scatter(t, points[0][0][0], c=c1, s=size, zorder=2, alpha=1, label='Original')
+                ax2.scatter(t, points[0][0][1], c=c1, s=size, zorder=2, alpha=1, label='Original')
+            else:
+                ax1.scatter(t, points[0][0][0], c=c1, s=size, zorder=2, alpha=1)
+                ax2.scatter(t, points[0][0][1], c=c1, s=size, zorder=2, alpha=1)
+
+        else:
+            for c in range(len(points)):
+                ax1.scatter(t, points[c][0][0], c=c1, s=size, zorder=2, alpha=1)
+                ax2.scatter(t, points[c][0][1], c=c1, s=size, zorder=2, alpha=1)
+
+    for t, points in enumerate(list_smoothed):
+        if len(points) == 1:
+            if t == 0:
+                ax1.scatter(t, points[0][0][0], c=c2, s=size, zorder=2, alpha=a2, label='Smoothed')
+                ax2.scatter(t, points[0][0][1], c=c2, s=size, zorder=2, alpha=a2, label='Smoothed')
+            else:
+                ax1.scatter(t, points[0][0][0], c=c2, s=size, zorder=2, alpha=a2)
+                ax2.scatter(t, points[0][0][1], c=c2, s=size, zorder=2, alpha=a2)
+
+        else:
+            for c in range(len(points)):
+                ax1.scatter(t, points[c][0][0], c=c2, s=size, zorder=2, alpha=0.75)
+                ax2.scatter(t, points[c][0][1], c=c2, s=size, zorder=2, alpha=0.75)
+        ax1.axvline(x=t, color='gray', linestyle=':', linewidth=1, zorder=1)
+        ax2.axvline(x=t, color='gray', linestyle=':', linewidth=1, zorder=1)
+    ax1.legend()
+    ax2.legend()
+    plt.show()

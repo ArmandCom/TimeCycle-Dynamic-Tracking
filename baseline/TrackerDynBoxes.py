@@ -1,15 +1,19 @@
-from baseline.utils_dynamics import *
+from utils_dynamics import *
 from functools import reduce
 from operator import mul
+import torch
+import numpy as np
+device = torch.device('cpu')
 
 
 class TrackerDynBoxes:
     # Generates a candidate sequence given an index
 
-    def __init__(self, T0=7, T=2, noise=0.0001, coord=0):
+    def __init__(self, T0=7, T=2, s=1, noise=0.0001, coord=0):
         """ Inits TrackerDynBoxes"""
         self.T0 = T0
         self.T = T
+        self.s = s
         self.noise = noise
         self.buffer_past_x = torch.zeros((T0, 1))
         self.buffer_past_y = torch.zeros((T0, 1))
@@ -19,7 +23,6 @@ class TrackerDynBoxes:
         self.JBLDs_x = []
         self.count_pred = 0
         self.coord = coord
-
 
     def generate_seq_from_tree(self, seq_lengths, idx):
         """ Generates a candidate sequence given an index
@@ -48,11 +51,9 @@ class TrackerDynBoxes:
         belongs = 1
         th = 0.0005
         past_jbld = self.JBLDs_x[-1]
-        # if cand > th and self.count_pred < 2:
-        #         #     # predict
-        #         #     print('predicting frame:', self.current_t)
-        #         #     belongs = - 1
-        #         #     self.count_pred +=1
+        frame_to_predict = 14 + self.T - 1
+        if self.current_t >= frame_to_predict and self.current_t < frame_to_predict + 3:
+            belongs = -1
         return belongs
 
     def update_buffers(self, new_result):
@@ -130,4 +131,3 @@ class TrackerDynBoxes:
 
             self.current_t += 1
         return point_to_add
-

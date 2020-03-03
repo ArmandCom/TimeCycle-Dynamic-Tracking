@@ -2,10 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="92d02dd0-c2ed-4f8a-a690-a0eec528715d" name="Default" comment="Added JBLD plotting">
-      <change afterPath="$PROJECT_DIR$/baseline/processing.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/webServers.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/TimeCycle-Dynamic-Tracking.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TimeCycle-Dynamic-Tracking.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/baseline/baseline_pytorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/baseline_pytorch.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/baseline/utils_dynamics.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/utils_dynamics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/processing.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/baseline/utils_visualization.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/utils_visualization.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -49,6 +53,7 @@
   <component name="PropertiesComponent">
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
     <property name="WebServerToolWindowPanel.toolwindow.highlight.symlinks" value="true" />
@@ -153,6 +158,12 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Python.TrackerDynBoxes" />
+      <item itemvalue="Python.baseline_pytorch" />
+      <item itemvalue="Python.processing" />
+      <item itemvalue="Python.utils_visualization" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.baseline_pytorch" />
@@ -174,6 +185,7 @@
       <updated>1579888738360</updated>
       <workItem from="1582822658304" duration="43000" />
       <workItem from="1582822702126" duration="29341000" />
+      <workItem from="1583261892260" duration="11006000" />
     </task>
     <task id="LOCAL-00001" summary="introduced modularity">
       <created>1582823699029</created>
@@ -223,49 +235,67 @@
     <option name="LAST_COMMIT_MESSAGE" value="Added JBLD plotting" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="274" y="-938" key="CommitChangelistDialog2" timestamp="1582905518855">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="882" y="350" key="#Deployment" timestamp="1583262876378">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state x="274" y="-938" key="CommitChangelistDialog2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582905518855" />
-    <state x="392" y="105" key="CommitChangelistDialog2/0.0.1440.900@0.0.1440.900" timestamp="1582853543376" />
-    <state width="1878" height="330" key="GridCell.Tab.0.bottom" timestamp="1582925799984">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="882" y="350" key="#Deployment/0.23.2560.1337@0.23.2560.1337" timestamp="1583262876378" />
+    <state x="882" y="350" key="#Options" timestamp="1583262837437">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state width="1878" height="330" key="GridCell.Tab.0.bottom/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582925799984" />
-    <state width="1398" height="232" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1582853393623" />
-    <state width="1878" height="232" key="GridCell.Tab.0.bottom/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582908226288" />
-    <state width="1878" height="330" key="GridCell.Tab.0.center" timestamp="1582925799983">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="882" y="350" key="#Options/0.23.2560.1337@0.23.2560.1337" timestamp="1583262837437" />
+    <state x="274" y="-938" key="CommitChangelistDialog2" timestamp="1583261891008" />
+    <state x="274" y="-938" key="CommitChangelistDialog2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state x="392" y="105" key="CommitChangelistDialog2/0.0.1440.900@0.0.1440.900" timestamp="1583261891009" />
+    <state x="174" y="148" width="2216" height="1073" key="DiffContextDialog" timestamp="1583263242592">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state width="1878" height="330" key="GridCell.Tab.0.center/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582925799983" />
-    <state width="1398" height="232" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1582853393622" />
-    <state width="1878" height="232" key="GridCell.Tab.0.center/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582908226287" />
-    <state width="1878" height="330" key="GridCell.Tab.0.left" timestamp="1582925799982">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="174" y="148" width="2216" height="1073" key="DiffContextDialog/0.23.2560.1337@0.23.2560.1337" timestamp="1583263242592" />
+    <state x="174" y="148" width="2216" height="1073" key="DirDiffDialog" timestamp="1583262819183">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state width="1878" height="330" key="GridCell.Tab.0.left/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582925799982" />
-    <state width="1398" height="232" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1582853393621" />
-    <state width="1878" height="232" key="GridCell.Tab.0.left/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582908226286" />
-    <state width="1878" height="330" key="GridCell.Tab.0.right" timestamp="1582925799983">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="174" y="148" width="2216" height="1073" key="DirDiffDialog/0.23.2560.1337@0.23.2560.1337" timestamp="1583262819183" />
+    <state width="1187" height="361" key="GridCell.Tab.0.bottom" timestamp="1583275409134">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state width="1878" height="330" key="GridCell.Tab.0.right/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582925799983" />
-    <state width="1398" height="232" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1582853393622" />
-    <state width="1878" height="232" key="GridCell.Tab.0.right/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582908226287" />
-    <state x="220" y="-901" key="SettingsEditor" timestamp="1582822680315">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state width="1878" height="330" key="GridCell.Tab.0.bottom/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1398" height="232" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1583261891009" />
+    <state width="1878" height="232" key="GridCell.Tab.0.bottom/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1187" height="361" key="GridCell.Tab.0.bottom/0.23.2560.1337@0.23.2560.1337" timestamp="1583275409134" />
+    <state width="1187" height="361" key="GridCell.Tab.0.center" timestamp="1583275409134">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state x="220" y="-901" key="SettingsEditor/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582822680315" />
-    <state x="311" y="-800" key="Vcs.Push.Dialog.v2" timestamp="1582905533258">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state width="1878" height="330" key="GridCell.Tab.0.center/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1398" height="232" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1583261891009" />
+    <state width="1878" height="232" key="GridCell.Tab.0.center/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1187" height="361" key="GridCell.Tab.0.center/0.23.2560.1337@0.23.2560.1337" timestamp="1583275409134" />
+    <state width="1187" height="361" key="GridCell.Tab.0.left" timestamp="1583275409133">
+      <screen x="0" y="23" width="2560" height="1337" />
     </state>
-    <state x="311" y="-800" key="Vcs.Push.Dialog.v2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582905533258" />
-    <state x="420" y="233" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1582853554461" />
+    <state width="1878" height="330" key="GridCell.Tab.0.left/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1398" height="232" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1583261891009" />
+    <state width="1878" height="232" key="GridCell.Tab.0.left/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1187" height="361" key="GridCell.Tab.0.left/0.23.2560.1337@0.23.2560.1337" timestamp="1583275409133" />
+    <state width="1187" height="361" key="GridCell.Tab.0.right" timestamp="1583275409134">
+      <screen x="0" y="23" width="2560" height="1337" />
+    </state>
+    <state width="1878" height="330" key="GridCell.Tab.0.right/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1398" height="232" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1583261891009" />
+    <state width="1878" height="232" key="GridCell.Tab.0.right/0.23.1440.877/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state width="1187" height="361" key="GridCell.Tab.0.right/0.23.2560.1337@0.23.2560.1337" timestamp="1583275409134" />
+    <state x="625" y="245" key="SettingsEditor" timestamp="1583261955260">
+      <screen x="0" y="23" width="2560" height="1337" />
+    </state>
+    <state x="220" y="-901" key="SettingsEditor/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state x="625" y="245" key="SettingsEditor/0.23.2560.1337@0.23.2560.1337" timestamp="1583261955260" />
+    <state x="311" y="-800" key="Vcs.Push.Dialog.v2" timestamp="1583261891009" />
+    <state x="311" y="-800" key="Vcs.Push.Dialog.v2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583261891009" />
+    <state x="420" y="233" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1583261891009" />
+    <state x="959" y="523" key="com.intellij.ide.util.TipDialog" timestamp="1583261897346">
+      <screen x="0" y="23" width="2560" height="1337" />
+    </state>
+    <state x="959" y="523" key="com.intellij.ide.util.TipDialog/0.23.2560.1337@0.23.2560.1337" timestamp="1583261897346" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$utils_visualization.coverage" NAME="utils_visualization Coverage Results" MODIFIED="1582848696882" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
-    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$processing.coverage" NAME="processing Coverage Results" MODIFIED="1582925785627" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
-    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$TrackerDynBoxes.coverage" NAME="TrackerDynBoxes Coverage Results" MODIFIED="1582835401203" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
-    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$baseline_pytorch.coverage" NAME="baseline_pytorch Coverage Results" MODIFIED="1582925799974" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
+    <SUITE FILE_PATH="coverage/TimeCycle_Dynamic_Tracking$baseline_pytorch.coverage" NAME="baseline_pytorch Coverage Results" MODIFIED="1583275224005" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/baseline" />
   </component>
 </project>
