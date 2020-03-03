@@ -65,6 +65,6 @@ if __name__ == '__main__':
         # Traj multiple
         if step < 1:
             for i in range(data.shape[1]):
-                fig = plt.plot(data[0,i,:].numpy())
+                fig = plt.scatter(data[0,i,:].numpy())
                 plt.savefig('example_traj_loaded')
             plt.close()

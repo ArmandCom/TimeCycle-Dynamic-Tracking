@@ -198,10 +198,15 @@ class TrajectoryTree(data.Dataset):
 
 def main():
 
-  traj_length = 9
-  traj2D = TrajectoryTree('', True, traj_length=traj_length)
-  # traj = traj2D.get_random_trajectory()
-  traj2D.generate_dataset(root='/data/Armand/TimeCycle/traj', n_traj=2)
-
+  traj_length = 15
+  traj2D = TrajectoryTree(traj_length=traj_length)
+  traj = traj2D.get_random_trajectory()
+  print(traj[0].shape)
+  # traj2D.generate_dataset(root='/data/Armand/TimeCycle/traj', n_traj=2)
+  first_traj = traj[0][0,0,:]
+  second_traj = traj[0][2,2,:] 
+  plt.scatter(np.arange(traj_length), first_traj)
+  plt.scatter(np.arange(traj_length), second_traj)
+  plt.savefig('a.png')
 if __name__=='__main__':
   main()

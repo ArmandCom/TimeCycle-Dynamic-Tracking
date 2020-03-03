@@ -257,6 +257,9 @@ def main():
   traj_length = 9
   traj2D = TrajectoryMultiple(traj_length=traj_length)
   traj = traj2D.get_random_trajectory()
+  print(traj.shape)
+
+
   # traj2D.generate_dataset(root='/data/Armand/TimeCycle/traj', n_traj=2)
 
 if __name__=='__main__':

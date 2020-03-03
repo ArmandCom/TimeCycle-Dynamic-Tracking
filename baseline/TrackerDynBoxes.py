@@ -17,6 +17,7 @@ class TrackerDynBoxes:
         self.buffer_future_y = []
         self.current_t = 0
         self.JBLDs_x = []
+        self.JBLDs_xfake = []
         self.count_pred = 0
         self.coord = coord
 
@@ -46,11 +47,11 @@ class TrackerDynBoxes:
             - belongs:
         """
         belongs = 1
-        th = 0.0005
-        past_jbld = self.JBLDs_x[-1]
-        frame_to_predict = 14 + self.T - 1
-        if self.current_t >= frame_to_predict and self.current_t < frame_to_predict + 3:
-            belongs = -1
+        # th = 0.0005
+        # past_jbld = self.JBLDs_x[-1]
+        # frame_to_predict = 14 + self.T - 1
+        # if self.current_t >= frame_to_predict and self.current_t < frame_to_predict + 3:
+        #     belongs = -1
         return belongs
 
     def update_buffers(self, new_result):
@@ -64,7 +65,7 @@ class TrackerDynBoxes:
         self.buffer_past_y[-1, 0] = new_result[1]
         del self.buffer_future_x[0]
         del self.buffer_future_y[0]
-
+        
 
     def decide(self, *candidates):
         """ Generates a candidate sequence given an index
@@ -125,7 +126,27 @@ class TrackerDynBoxes:
                     point_to_add[0] = px
                     point_to_add[1] = py
 
+
+                # Let us compare if we predict T samples from T0 
+                # buffer_past_tmp = torch.zeros((1,self.T0, 2))
+                # if(self.coord == 0):
+                #     buffer_past_tmp[:,:,0] = self.buffer_past_x.view(1,self.T0)
+                # elif(self.coord == 1):
+                #     buffer_past_tmp[:,:,1] = self.buffer_past_y.view(1,self.T0)
+
+                # predictions = torch.zeros((1, self.T, 2))
+                # for i in range(self.T):
+                #     H = Hankel(buffer_past_tmp[0,:,self.coord])
+                #     p = predict_Hankel(H)
+                #     predictions[0, i, :] = p
+                #     buffer_past_tmp = torch.cat([buffer_past_tmp, predictions[:,i,:].unsqueeze(1)], dim=1)
+
+                # tmp_jbld_fake = compare_dynamics(buffers_past.type(torch.FloatTensor), predictions.type(torch.FloatTensor), self.noise, self.coord)
+                # self.JBLDs_xfake.append(tmp_jbld_fake)
+                # print(predictions)
+
                 self.update_buffers(point_to_add)
+                # point_to_add = predictions[0,0,0]
 
             self.current_t += 1
         return point_to_add

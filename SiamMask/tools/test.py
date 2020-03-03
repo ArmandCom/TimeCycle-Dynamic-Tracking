@@ -262,14 +262,14 @@ def siamese_track(state, im, mask_enable=False, refine_enable=False, device='cpu
     pscore = penalty * score
 
     # cos window (motion model)
-    N = 17
+    N = 39
     bboxes = np.zeros((6,N), dtype=np.float64) 
     # bboxes has the shape (6 , Npoints) ; 0=res_x, 1=res_y, 2=res_w, 3=res_h, 4=score, 5=best_pscore_id_tmp
     pscore = pscore * (1 - p.window_influence) + window * p.window_influence
     attmap = score.reshape(5,25,25)
     attmap = np.amax(attmap, axis=0)
     # np.save('/data/Ponc/tracking/results/mevasa/'+str(arrendatario)+'.npy', attmap)
-    best_score_threshold = 0.99
+    best_score_threshold = 1.1
     for idx in range(0,N):
         if(idx==0):
             best_pscore_id = np.argmax(pscore)
