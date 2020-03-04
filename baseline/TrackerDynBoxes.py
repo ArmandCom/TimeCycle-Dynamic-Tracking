@@ -9,11 +9,10 @@ device = torch.device('cpu')
 class TrackerDynBoxes:
     # Generates a candidate sequence given an index
 
-    def __init__(self, T0=7, T=2, s=1, noise=0.0001, coord=0):
+    def __init__(self, T0=7, T=2, noise=0.0001, coord=0):
         """ Inits TrackerDynBoxes"""
         self.T0 = T0
         self.T = T
-        self.s = s
         self.noise = noise
         self.buffer_past_x = torch.zeros((T0, 1))
         self.buffer_past_y = torch.zeros((T0, 1))
@@ -49,11 +48,14 @@ class TrackerDynBoxes:
             - belongs:
         """
         belongs = 1
-        th = 0.0005
+        th = 0.00045
         past_jbld = self.JBLDs_x[-1]
-        frame_to_predict = 14 + self.T - 1
-        if self.current_t >= frame_to_predict and self.current_t < frame_to_predict + 3:
-            belongs = -1
+        frame_to_predict = 18
+        # if self.current_t == frame_to_predict or self.current_t == frame_to_predict + 1:
+        #     belongs = -1
+        # if self.JBLDs_x[-1] > th:
+        #     print('PREDICTED!')
+        #     belongs = -1
         return belongs
 
     def update_buffers(self, new_result):
