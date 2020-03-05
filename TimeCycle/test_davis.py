@@ -483,7 +483,6 @@ def test(val_loader, model, epoch, use_cuda):
                     lbl = lbls_resize2[0, hh, ww, :]
                 else:
                     lbl = lbls_resize2[t + iter, hh, ww, :]
-
                 np.add.at(predlbls, (h, w), lbl * corrfeat2[t, ww, hh, h, w][:, None])
 
             t07 = time.time()

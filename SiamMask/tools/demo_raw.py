@@ -95,6 +95,8 @@ def filter_bboxes(rboxes, k, c=10):
             
 
 if __name__ == '__main__':
+
+    
     # Setup device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
@@ -112,8 +114,9 @@ if __name__ == '__main__':
     
     # Parse Image file
     # img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[772:805] # NHL
-    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[32:88] # NFL
-    
+    # img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[32:88] # NFL
+    img_files = sorted(glob.glob(join(args.base_path, '*.jp*')))[0:98]
+
     ims = [cv2.imread(imf) for imf in img_files]
     
     try:
@@ -124,6 +127,11 @@ if __name__ == '__main__':
         init_rect = (437, 306, 115,50) # Eagles
         init_rect = (737, 374, 100, 156) # NHL
         init_rect = (1027, 259, 57, 100) # NFL
+        init_rect = (422, 235, 49, 95) # warmup_capitals
+        init_rect = (71, 100, 178-71, 314-100) # warmup_edmonton oilers
+        init_rect = (419, 356, 77, 131) # austrian_hockey_warmup
+        init_rect = (1145, 253, 135, 294) # philadelphia_warmup
+
         x, y, w, h = init_rect
 
     except:
@@ -131,7 +139,7 @@ if __name__ == '__main__':
 
     toc = 0
     print("num images ",len(ims))
-
+    
 
     for f, im in enumerate(ims):
         tic = cv2.getTickCount()
@@ -143,7 +151,7 @@ if __name__ == '__main__':
         elif f > 0:  # tracking
             # state = siamese_init(im, target_pos, target_sz, siammask, cfg['hp'], device=device)
             state = siamese_track(state, im, mask_enable=True, refine_enable=True, device=device)  # track
-            
+            print(f)
             location = state['ploygon'].flatten()
             mask = state['mask'] > state['p'].seg_thr
             im[:, :, 2] = (mask > 0) * 255 + (mask == 0) * im[:, :, 2]
@@ -156,7 +164,7 @@ if __name__ == '__main__':
             
             cv2.polylines(im, [np.int0(location).reshape((-1, 1, 2))], True, (0, 255, 0), 3)
             cv2.putText(im,str(state['score']),(50,50),cv2.FONT_HERSHEY_COMPLEX,1.0,(0,255,0))
-            cv2.imwrite('/data/Ponc/tracking/results/crossing_football_superbowl_2020/'+str(f)+'.jpeg', im)
+            cv2.imwrite('/data/Ponc/tracking/results/philadelphia_warmup/'+str(f)+'.jpeg', im)
 
         toc += cv2.getTickCount() - tic
 

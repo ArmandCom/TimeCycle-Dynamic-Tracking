@@ -102,7 +102,32 @@ def plot_candidates_and_jblds(coord, data, points_tracked_npy, jblds, T0, T):
     plt.show()
 
 
+def plot_2_jblds(coord, data,points_coord,jblds, T0, T):
+    size_small = 15
+    size_big = 50
+    fig, ax1 = plt.subplots(1)
+    ax1.set_title('JBLD')
 
+
+    time_out = np.arange(T0, len(points_coord) + T0)
+
+    for t, points in enumerate(data):
+        if t % 3 == 0:
+            ax1.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
+            # ax2.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
+        elif (t+1) % 3 == 0:
+            ax1.axvline(x=t, color='r', linestyle=':', linewidth=1, zorder=1)
+            # ax2.axvline(x=t, color='r', linestyle=':', linewidth=1, zorder=1)
+        else:
+            ax1.axvline(x=t, color='b', linestyle=':', linewidth=1, zorder=1)
+            # ax2.axvline(x=t, color='b', linestyle=':', linewidth=1, zorder=1)
+
+   
+    ax1.plot(time_out, jblds[:,0], color='k')
+    ax1.plot(time_out, jblds[:,1], color='g')
+
+    ax1.set_xlim(0, len(data))
+    plt.show()
 def plot_data_and_smoothed(data, list_smoothed, W):
     """ Plots original data and the smoothed version of the data
     """
