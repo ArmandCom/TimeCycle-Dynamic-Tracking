@@ -3,3 +3,7 @@ SiamMask/results-seagulls/
 SiamMask/data/
 *.pyc
 *.pth
+
+.DS_Store
+centroids_tree_nfl.obj
+venv/
