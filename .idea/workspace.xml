@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="92d02dd0-c2ed-4f8a-a690-a0eec528715d" name="Default" comment="Added JBLD plotting">
-      <change afterPath="$PROJECT_DIR$/baseline/utils_general.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/TimeCycle-Dynamic-Tracking.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TimeCycle-Dynamic-Tracking.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="92d02dd0-c2ed-4f8a-a690-a0eec528715d" name="Default" comment="Added Smoothing">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/TrackerDynBoxes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/baseline/baseline_pytorch.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/baseline_pytorch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseline/utils_dynamics.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/utils_dynamics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/baseline/utils_visualization.py" beforeDir="false" afterPath="$PROJECT_DIR$/baseline/utils_visualization.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -178,7 +175,8 @@
       <workItem from="1582822702126" duration="29341000" />
       <workItem from="1583340248758" duration="1907000" />
       <workItem from="1583343810498" duration="4158000" />
-      <workItem from="1583354874670" duration="2343000" />
+      <workItem from="1583354874670" duration="2445000" />
+      <workItem from="1583422003984" duration="466000" />
     </task>
     <task id="LOCAL-00001" summary="introduced modularity">
       <created>1582823699029</created>
@@ -215,7 +213,14 @@
       <option name="project" value="LOCAL" />
       <updated>1582905518976</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Added Smoothing">
+      <created>1583357691094</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1583357691094</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -225,18 +230,19 @@
     <MESSAGE value="introduced modularity" />
     <MESSAGE value="Mevasa" />
     <MESSAGE value="Added JBLD plotting" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added JBLD plotting" />
+    <MESSAGE value="Added Smoothing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added Smoothing" />
   </component>
   <component name="WindowStateProjectService">
     <state x="311" y="-875" key="#Deployment" timestamp="1583341647368">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
     <state x="311" y="-875" key="#Deployment/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1583341647368" />
-    <state x="274" y="-938" key="CommitChangelistDialog2" timestamp="1582905518855">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="392" y="105" key="CommitChangelistDialog2" timestamp="1583357690855">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="274" y="-938" key="CommitChangelistDialog2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582905518855" />
-    <state x="392" y="105" key="CommitChangelistDialog2/0.0.1440.900@0.0.1440.900" timestamp="1582853543376" />
+    <state x="392" y="105" key="CommitChangelistDialog2/0.0.1440.900@0.0.1440.900" timestamp="1583357690855" />
     <state width="1878" height="266" key="GridCell.Tab.0.bottom" timestamp="1583353689404">
       <screen x="-249" y="-1080" width="1920" height="1080" />
     </state>
@@ -274,11 +280,11 @@
     </state>
     <state x="220" y="-901" key="SettingsEditor/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582822680315" />
     <state x="352" y="149" key="SettingsEditor/0.0.1440.900/-249.-1080.1920.1080@0.0.1440.900" timestamp="1583340269600" />
-    <state x="311" y="-800" key="Vcs.Push.Dialog.v2" timestamp="1582905533258">
-      <screen x="-249" y="-1080" width="1920" height="1080" />
+    <state x="420" y="233" key="Vcs.Push.Dialog.v2" timestamp="1583357702696">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="311" y="-800" key="Vcs.Push.Dialog.v2/0.0.1440.900/-249.-1080.1920.1080@-249.-1080.1920.1080" timestamp="1582905533258" />
-    <state x="420" y="233" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1582853554461" />
+    <state x="420" y="233" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1583357702696" />
     <state x="596" y="365" key="publish.login" timestamp="1583343833526">
       <screen x="0" y="0" width="1440" height="900" />
     </state>

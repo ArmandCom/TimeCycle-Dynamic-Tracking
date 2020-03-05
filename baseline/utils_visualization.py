@@ -4,6 +4,8 @@ import torch
 device = torch.device('cpu')
 
 def plot_candidates_and_trajectory(data, data_smoothed, points_tracked_npy, T0, T, W, coord):
+    """ Plots the original candidates, the smoothed candidates and the tracked decisions.
+    """
     size_small = 50
     size_big = 70
     s = int(np.ceil(W/2)-1)
@@ -57,6 +59,8 @@ def plot_candidates_and_trajectory(data, data_smoothed, points_tracked_npy, T0, 
 
 
 def plot_candidates_and_jblds(coord, data, points_tracked_npy, jblds, T0, T):
+    """  In one axis plots the candidate points and the decided ones and on the other axis, the JBLD evolution.
+    """
     th = 0.00045
     size_small = 15
     size_big = 50
@@ -100,6 +104,8 @@ def plot_candidates_and_jblds(coord, data, points_tracked_npy, jblds, T0, T):
 
 
 def plot_data_and_smoothed(data, list_smoothed, W):
+    """ Plots original data and the smoothed version of the data
+    """
     size = 40
     c1 = 'blue'
     c2 = 'red'

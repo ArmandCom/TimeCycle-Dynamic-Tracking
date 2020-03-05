@@ -42,10 +42,10 @@ class TrackerDynBoxes:
     def classify(self, cand, thresh=0.5):
         """ Determines if a candidate should be kept or a prediction should be performed
         Args:
-            - cand:
-            - thresh:
+            - cand: ??
+            - thresh: Threshold
         Returns:
-            - belongs:
+            - belongs: Boolean determining if the position must be predicted (-1) or not (1)
         """
         belongs = 1
         th = 0.00045
@@ -59,9 +59,7 @@ class TrackerDynBoxes:
         return belongs
 
     def update_buffers(self, new_result):
-        """ Generates a candidate sequence given an index
-        Args:
-            - new_result:
+        """ Updates buffers with incoming information
         """
         self.buffer_past_x[0:-1, 0] = self.buffer_past_x[1:, 0]
         self.buffer_past_y[0:-1, 0] = self.buffer_past_y[1:, 0]
@@ -77,6 +75,8 @@ class TrackerDynBoxes:
             - candidates contains N sublists [ [ [(px11,py11)] ] , [ [(px12,py12)],[(px22,py22)] ] ]
             - candidates[1] = [ [(px12,py12)],[(px22,py22)] ]
             - candidates[1][0] = [(px12,py12)]
+        Returns:
+            - point_to_add: (x,y) decided point at certain sequence
         """
         candidates = candidates[0]
         point_to_add = torch.zeros(2)
