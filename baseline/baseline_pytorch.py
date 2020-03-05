@@ -23,6 +23,8 @@ directory = '/data/Ponc/tracking/centroids_tree_nhl.obj'
 with open(directory, 'rb') as f:
     data = pkl.load(f)
 
+# Bounding Boxes
+
 # Tracker
 tracker = TrackerDynBoxes(T0=T0, T=T, noise=eps, coord=coordinate)
 len_output = len(data) - T0 - T + 1  # Smoothing will not affect the length because of the mirroring
@@ -66,3 +68,4 @@ jblds = np.asarray(tracker.JBLDs_x)
 # plot_data_and_smoothed(data, list_smoothed, W)
 # plot_candidates_and_trajectory(data, list_smoothed, points_tracked_npy, T0, T, W, coordinate)
 plot_candidates_and_jblds(coordinate, data, points_tracked_npy, jblds, T0, T)
+plot_position_and_bboxes(data, bboxes)

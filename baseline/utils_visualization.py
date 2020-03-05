@@ -146,3 +146,53 @@ def plot_data_and_smoothed(data, list_smoothed, W):
     ax1.legend()
     ax2.legend()
     plt.show()
+
+
+def plot_position_and_bboxes(data, data_boxes):
+    # Bounding Boxes Data
+# data_boxes[t] = bbox = [[array([x11, y11])], [array([x12, y12])], [array([x13, y13])], [array([x14, y14])], ] - list
+# bbox[0] = [array([x11, y11]), [array([x12, y12]), [array([x13, y13]), [array([x14, y14])] - list
+# points[0][0] = [x1, y1] - numpy.ndarray
+# points[0][0][1] = y1 - numpy.int64 (or numpy.float64)
+
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4)
+    ax1.set_title('Centroid Evolution (X)')
+    ax2.set_title('Width Evolution')
+    ax3.set_title('Centroid Evolution (Y)')
+    ax4.set_title('Height Evolution')
+
+    for t in range(len(data)):
+        points = data[t]
+        bbox = data_boxes[t]
+        if len(points) == 1:
+            ax1.scatter(t, points[0][0][0], c=c2, s=size, zorder=2, alpha=a2)
+            ax2.scatter(t, points[0][0][1], c=c2, s=size, zorder=2, alpha=a2)
+            ax3.scatter(t, points[0][0][0], c=c2, s=size, zorder=2, alpha=a2)
+            ax4.scatter(t, points[0][0][1], c=c2, s=size, zorder=2, alpha=a2)
+
+        else:
+            for c in range(len(points)):
+                ax1.scatter(t, points[c][0][0], c=c2, s=size, zorder=2, alpha=0.75)
+                ax2.scatter(t, points[c][0][1], c=c2, s=size, zorder=2, alpha=0.75)
+
+        # Plot vertical lines
+        if t % 3 == 0:
+            ax1.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
+            ax2.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
+            ax3.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
+            ax4.axvline(x=t, color='g', linestyle=':', linewidth=1, zorder=1)
+        elif (t+1) % 3 == 0:
+            ax1.axvline(x=t, color='r', linestyle=':', linewidth=1, zorder=1)
+            ax2.axvline(x=t, color='r', linestyle=':', linewidth=1, zorder=1)
+            ax3.axvline(x=t, color='r', linestyle=':', linewidth=1, zorder=1)
+            ax4.axvline(x=t, color='r', linestyle=':', linewidth=1, zorder=1)
+        else:
+            ax1.axvline(x=t, color='b', linestyle=':', linewidth=1, zorder=1)
+            ax2.axvline(x=t, color='b', linestyle=':', linewidth=1, zorder=1)
+            ax3.axvline(x=t, color='b', linestyle=':', linewidth=1, zorder=1)
+            ax4.axvline(x=t, color='b', linestyle=':', linewidth=1, zorder=1)
+    ax1.legend()
+    ax2.legend()
+    plt.show()
+
+
