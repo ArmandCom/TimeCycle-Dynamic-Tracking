@@ -61,6 +61,8 @@ def JBLD(X, Y, det):
 
 
 
+
+
 def compare_dynamics(data_root, data, eps, coord, BS=1):
     """ Compares dynamics between two sequences
     Args:
@@ -79,8 +81,11 @@ def compare_dynamics(data_root, data, eps, coord, BS=1):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), True)
-    dist = dist[0][coord].item()  # Print only x information
-    return dist
+    # dist = dist[0][coord].item()  # Print only x information
+    a = dist.clone()
+    dist = torch.mean(dist, dim=1)
+    
+    return dist, a
 
 
 def predict_Hankel(H):
@@ -93,7 +98,12 @@ def predict_Hankel(H):
     rows, cols = H.size()
     U, S, V = torch.svd(H)
     r = V[:,-1]
+    # print(r)
+    r_f = np.flip(r.numpy())
+    roots = np.roots(r_f)
+    print(roots)
     last_column_of_H = H[-1,:]
     last_column_of_H = last_column_of_H[1:]
+    
     first_term = torch.matmul(last_column_of_H, r[:-1])/(-r[-1])
     return first_term

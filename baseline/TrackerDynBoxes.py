@@ -20,7 +20,7 @@ class TrackerDynBoxes:
         self.JBLDs_xfake = []
         self.count_pred = 0
         self.coord = coord
-
+        self.JBLDs_all = []
 
     def generate_seq_from_tree(self, seq_lengths, idx):
         """ Generates a candidate sequence given an index
@@ -101,13 +101,17 @@ class TrackerDynBoxes:
                 [seqs_lengths.append(len(y)) for y in self.buffer_future_x]
                 num_of_seqs = reduce(mul, seqs_lengths)
                 JBLDs = torch.zeros((num_of_seqs, 1))
+                a = torch.zeros((num_of_seqs, 2))
                 buffers_past = torch.cat([self.buffer_past_x, self.buffer_past_y], dim=1).unsqueeze(0)
                 for i in range(num_of_seqs):
                     # Build each sequence of tree
                     seq = self.generate_seq_from_tree(seqs_lengths, i)
                     # Compute JBLD for each
                     # compare_dynamics needs a sequence of (1, T0, 2) and (1, T, 2)
-                    JBLDs[i, 0] = compare_dynamics(buffers_past.type(torch.FloatTensor), seq.type(torch.FloatTensor), self.noise, self.coord)
+                    JBLDs[i, 0], b = compare_dynamics(buffers_past.type(torch.FloatTensor), seq.type(torch.FloatTensor), self.noise, self.coord)
+                    print(b)
+                    a[i,0] = b[0][0].item()
+                    a[i,1] = b[0][1].item()
 
                 # Choose the minimum
                 min_idx_jbld = torch.argmin(JBLDs)
@@ -115,6 +119,7 @@ class TrackerDynBoxes:
                 point_to_add = self.generate_seq_from_tree(seqs_lengths, min_idx_jbld)
                 point_to_add = point_to_add[0, 0, :]
                 self.JBLDs_x.append(min_val_jbld)
+                self.JBLDs_all.append([a[min_idx_jbld,0],a[min_idx_jbld,1]])
 
                 # Classify candidate
                 classification_outcome = self.classify(min_val_jbld)  # -1 bad, 1 good
@@ -127,7 +132,7 @@ class TrackerDynBoxes:
                     point_to_add[1] = py
 
 
-                # Let us compare if we predict T samples from T0 
+                # # Let us compare if we predict T samples from T0 
                 # buffer_past_tmp = torch.zeros((1,self.T0, 2))
                 # if(self.coord == 0):
                 #     buffer_past_tmp[:,:,0] = self.buffer_past_x.view(1,self.T0)
@@ -140,10 +145,12 @@ class TrackerDynBoxes:
                 #     p = predict_Hankel(H)
                 #     predictions[0, i, :] = p
                 #     buffer_past_tmp = torch.cat([buffer_past_tmp, predictions[:,i,:].unsqueeze(1)], dim=1)
+                    
 
                 # tmp_jbld_fake = compare_dynamics(buffers_past.type(torch.FloatTensor), predictions.type(torch.FloatTensor), self.noise, self.coord)
                 # self.JBLDs_xfake.append(tmp_jbld_fake)
-                # print(predictions)
+                
+
 
                 self.update_buffers(point_to_add)
                 # point_to_add = predictions[0,0,0]

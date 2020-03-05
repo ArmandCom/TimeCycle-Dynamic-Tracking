@@ -27,4 +27,4 @@ def get_polygons_from_xml(path='/data/Ponc/tracking/ground_truth/philadelphia_wa
 if __name__ == '__main__':
     x = get_polygons_from_xml()
     print(x.shape)
-    print(type((x[0,0,:])))
+    print(x[0,:,:])
