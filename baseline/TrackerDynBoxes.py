@@ -23,10 +23,7 @@ class TrackerDynBoxes:
         self.JBLDs_xfake = []
         self.count_pred = 0
         self.coord = coord
-<<<<<<< HEAD
         self.JBLDs_all = []
-=======
->>>>>>> master
 
     def generate_seq_from_tree(self, seq_lengths, idx):
         """ Generates a candidate sequence given an index
@@ -53,12 +50,6 @@ class TrackerDynBoxes:
             - belongs: Boolean determining if the position must be predicted (-1) or not (1)
         """
         belongs = 1
-<<<<<<< HEAD
-        # th = 0.0005
-        # past_jbld = self.JBLDs_x[-1]
-        # frame_to_predict = 14 + self.T - 1
-        # if self.current_t >= frame_to_predict and self.current_t < frame_to_predict + 3:
-=======
         th = 0.00045
         past_jbld = self.JBLDs_x[-1]
         frame_to_predict = 18
@@ -66,7 +57,6 @@ class TrackerDynBoxes:
         #     belongs = -1
         # if self.JBLDs_x[-1] > th:
         #     print('PREDICTED!')
->>>>>>> master
         #     belongs = -1
         return belongs
 

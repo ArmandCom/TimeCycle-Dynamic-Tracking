@@ -81,19 +81,11 @@ def compare_dynamics(data_root, data, eps, coord, BS=1):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), True)
-<<<<<<< HEAD
-    # dist = dist[0][coord].item()  # Print only x information
-    a = dist.clone()
-    dist = torch.mean(dist, dim=1)
-    
-    return dist, a
-=======
     if coord == 2:
         dist = torch.mean(dist, dim=1)
     else:
         dist = dist[0][coord].item()  # Print only x information
     return dist
->>>>>>> master
 
 
 def predict_Hankel(H):
