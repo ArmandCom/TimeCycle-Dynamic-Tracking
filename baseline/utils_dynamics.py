@@ -4,7 +4,7 @@ device = torch.device('cpu')
 
 
 def Hankel(s0, stitch=False, s1=0):
-    """ Generates a candidate sequence given an index
+    """ Creates the Hankel Matrix given a sequence
     Args:
         - s0: Root sequence
         - switch: Boolean to indicate if Hankel must be stitched or not
@@ -64,13 +64,13 @@ def JBLD(X, Y, det):
 def compare_dynamics(data_root, data, eps, coord, BS=1):
     """ Compares dynamics between two sequences
     Args:
-        - data_root:
-        - data:
-        - eps:
-        - coord:
-        - BS:
+        - data_root: Data sequence
+        - data: Data sequence including data_root
+        - eps: Noise value
+        - coord: Coordinate value (0: x, 1: y, 2: mean)
+        - BS: Batch Size
     Returns:
-        - dist: (BS, 2)
+        - dist: (BS, 2) JBLD distance between sequences
     """
     dist = torch.zeros(BS, 2, device=device)
     for n_batch in range(BS):
@@ -78,16 +78,19 @@ def compare_dynamics(data_root, data, eps, coord, BS=1):
             H0 = Hankel(data_root[n_batch, :, d])
             H1 = Hankel(data_root[n_batch, :, d], True, data[n_batch, :, d])
             dist[n_batch, d] = JBLD(Gram(H0, eps), Gram(H1, eps), True)
-    dist = dist[0][coord].item()  # Print only x information
+    if coord == 2:
+        dist = torch.mean(dist, dim=1)
+    else:
+        dist = dist[0][coord].item()  # Print only x information
     return dist
 
 
 def predict_Hankel(H):
-    """ Generates a candidate sequence given an index
+    """ Predicts one trajectory value given the Hankel Matrix
     Args:
-        - H:
+        - H: Hankel matrix of the sequence
     Returns:
-        - first_term:
+        - first_term: Predicted value
     """
     rows, cols = H.size()
     U, S, V = torch.svd(H)

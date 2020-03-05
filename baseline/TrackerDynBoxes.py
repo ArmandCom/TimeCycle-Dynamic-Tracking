@@ -1,6 +1,9 @@
 from utils_dynamics import *
 from functools import reduce
 from operator import mul
+import torch
+import numpy as np
+device = torch.device('cpu')
 
 
 class TrackerDynBoxes:
@@ -19,7 +22,6 @@ class TrackerDynBoxes:
         self.JBLDs_x = []
         self.count_pred = 0
         self.coord = coord
-
 
     def generate_seq_from_tree(self, seq_lengths, idx):
         """ Generates a candidate sequence given an index
@@ -40,23 +42,24 @@ class TrackerDynBoxes:
     def classify(self, cand, thresh=0.5):
         """ Determines if a candidate should be kept or a prediction should be performed
         Args:
-            - cand:
-            - thresh:
+            - cand: ??
+            - thresh: Threshold
         Returns:
-            - belongs:
+            - belongs: Boolean determining if the position must be predicted (-1) or not (1)
         """
         belongs = 1
-        th = 0.0005
+        th = 0.00045
         past_jbld = self.JBLDs_x[-1]
-        frame_to_predict = 7 + self.T - 1
-        if self.current_t == frame_to_predict or self.current_t == frame_to_predict+1 or self.current_t == frame_to_predict+1 or self.current_t == frame_to_predict+2 or self.current_t == frame_to_predict+3:
-            belongs = -1
+        frame_to_predict = 18
+        # if self.current_t == frame_to_predict or self.current_t == frame_to_predict + 1:
+        #     belongs = -1
+        # if self.JBLDs_x[-1] > th:
+        #     print('PREDICTED!')
+        #     belongs = -1
         return belongs
 
     def update_buffers(self, new_result):
-        """ Generates a candidate sequence given an index
-        Args:
-            - new_result:
+        """ Updates buffers with incoming information
         """
         self.buffer_past_x[0:-1, 0] = self.buffer_past_x[1:, 0]
         self.buffer_past_y[0:-1, 0] = self.buffer_past_y[1:, 0]
@@ -72,6 +75,8 @@ class TrackerDynBoxes:
             - candidates contains N sublists [ [ [(px11,py11)] ] , [ [(px12,py12)],[(px22,py22)] ] ]
             - candidates[1] = [ [(px12,py12)],[(px22,py22)] ]
             - candidates[1][0] = [(px12,py12)]
+        Returns:
+            - point_to_add: (x,y) decided point at certain sequence
         """
         candidates = candidates[0]
         point_to_add = torch.zeros(2)
@@ -128,4 +133,3 @@ class TrackerDynBoxes:
 
             self.current_t += 1
         return point_to_add
-
